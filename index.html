@@ -59,11 +59,6 @@
     <div class="announcement">📢 1010烤肉不見不散！</div>
   </div>
 
-  <div class="announcement">📈 健康資訊區</div>
-  <div class="field"><strong>步數：</strong><span id="steps">讀取中...</span></div>
-  <div class="field"><strong>睡眠時間：</strong><span id="sleepDuration">讀取中...</span></div>
-  <div class="field"><strong>睡眠分數：</strong><span id="sleepScore">讀取中...</span></div>
-
   <hr />
 
   <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
@@ -174,42 +169,6 @@
         console.error(error);
       }
     }
-  </script>
-
-  <!-- Firebase 健康資料讀取 -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
-      authDomain: "piggynet-93c33.firebaseapp.com",
-      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "piggynet-93c33",
-      storageBucket: "piggynet-93c33.appspot.com",
-      messagingSenderId: "65171780729",
-      appId: "1:65171780729:web:ce5f7272f25a75f43490a8"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-
-    // Firebase 健康資料參照
-    const stepsRef = ref(db, "health/steps");
-    const sleepDurationRef = ref(db, "health/sleepDuration");
-    const sleepScoreRef = ref(db, "health/sleepScore");
-
-    onValue(stepsRef, (snapshot) => {
-      document.getElementById("steps").textContent = snapshot.val() + " 步";
-    });
-
-    onValue(sleepDurationRef, (snapshot) => {
-      document.getElementById("sleepDuration").textContent = snapshot.val() + " 小時";
-    });
-
-    onValue(sleepScoreRef, (snapshot) => {
-      document.getElementById("sleepScore").textContent = snapshot.val() + " 分";
-    });
   </script>
 </body>
 </html>
