@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <title>即時股票資訊示範</title>
+  <meta charset="UTF-8" />
+  <title>TWSE 股票查詢示範</title>
   <style>
     body { font-family: sans-serif; padding: 20px; }
     #info { margin-top: 20px; }
@@ -10,15 +10,14 @@
   </style>
 </head>
 <body>
-  <h1>股票資訊抓取示範</h1>
-  <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2454）" />
+  <h1>台股查詢（TWSE API）</h1>
+  <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
   <button onclick="loadStock()">查詢</button>
 
   <div id="info">
     <div class="field"><strong>名稱：</strong><span id="name"></span></div>
     <div class="field"><strong>代碼：</strong><span id="code"></span></div>
-    <div class="field"><strong>類別：</strong><span id="category"></span></div>
-    <div class="field"><strong>價格：</strong><span id="price"></span></div>
+    <div class="field"><strong>成交價：</strong><span id="price"></span></div>
   </div>
 
   <script>
@@ -29,29 +28,46 @@
         return;
       }
 
-      const url = `https://tw.stock.yahoo.com/quote/${symbol}.TW`;
-
       try {
-        const resp = await fetch(url);
-        const html = await resp.text();
-        // 用 DOMParser 把 HTML 轉成 document
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
+        // 先用 codeQuery 查名稱與代碼
+        const searchResp = await fetch(`https://www.twse.com.tw/zh/api/codeQuery?query=${symbol}`);
+        const searchData = await searchResp.json();
 
-        // 從你提供的範例中抓取
-        const h1 = doc.querySelector("h1.C\\(\\$c-link-text\\).Fw\\(b\\).Fz\\(24px\\).Mend\\(8px\\)");
-        const spanCode = doc.querySelector("span.C\\(\\$c-icon\\).Fz\\(24px\\).Mend\\(20px\\)");
-        const aCategory = doc.querySelector("a.Td\\(n\\).Px\\(8px\\).Py\\(3px\\).Fz\\(12px\\).Fw\\(b\\).Bdrs\\(11px\\).C\\(#188fff\\)");
-        const spanPrice = doc.querySelector("span.Fz\\(32px\\).Fw\\(b\\).Lh\\(1\\).Mend\\(16px\\).D\\(f\\).Ai\\(c\\).C\\(\\$c-trend-up\\)");
+        if (!searchData.suggestions || searchData.suggestions.length === 0) {
+          alert("查無此股票代碼");
+          return;
+        }
 
-        document.getElementById("name").textContent = h1 ? h1.textContent : "無法取得";
-        document.getElementById("code").textContent = spanCode ? spanCode.textContent : "無法取得";
-        document.getElementById("category").textContent = aCategory ? aCategory.textContent : "無法取得";
-        document.getElementById("price").textContent = spanPrice ? spanPrice.textContent : "無法取得";
+        // 建立資料：範例 "2330\t台積電"
+        const firstSuggestion = searchData.suggestions[0];
+        const [code, name] = firstSuggestion.split("\t");
 
-      } catch (err) {
-        console.error("錯誤：", err);
-        alert("擷取失敗：可能被 CORS 擋住或網頁改版了");
+        document.getElementById("name").textContent = name;
+        document.getElementById("code").textContent = code;
+
+        // 再去抓當天股票成交價（以最近交易日當日價格）
+        const today = new Date();
+        const dateStr = today.getFullYear().toString() +
+                        String(today.getMonth() + 1).padStart(2, "0") +
+                        String(today.getDate()).padStart(2, "0");
+
+        const priceResp = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`);
+        const priceData = await priceResp.json();
+
+        if (priceData.stat !== "OK" || !priceData.data || priceData.data.length === 0) {
+          document.getElementById("price").textContent = "無法取得價格";
+          return;
+        }
+
+        // 取得最新成交價：data 最後一筆資料的「成交價」欄位(價格欄位通常是第6個 index)
+        const lastTrade = priceData.data[priceData.data.length -1];
+        const closingPrice = lastTrade[6]; 
+
+        document.getElementById("price").textContent = closingPrice;
+
+      } catch (error) {
+        alert("發生錯誤，請稍後再試");
+        console.error(error);
       }
     }
   </script>
