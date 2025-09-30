@@ -60,9 +60,9 @@
   </div>
 
   <div class="announcement">📈 健康資訊區</div>
-  <div class="field"><strong>心率：</strong><span id="heartRate">讀取中...</span></div>
   <div class="field"><strong>步數：</strong><span id="steps">讀取中...</span></div>
-  <div class="field"><strong>體溫：</strong><span id="temperature">讀取中...</span></div>
+  <div class="field"><strong>睡眠時間：</strong><span id="sleepDuration">讀取中...</span></div>
+  <div class="field"><strong>睡眠分數：</strong><span id="sleepScore">讀取中...</span></div>
 
   <hr />
 
@@ -131,7 +131,7 @@
         const latestPrice = closePrices[closePrices.length - 1];
         const yesterdayClose = closePrices[closePrices.length - 2];
         const latestVolume = volumes[volumes.length - 1];
-        const yesterdayVolume = volumes[yesterdayVolume.length - 2];
+        const yesterdayVolume = volumes[volumes.length - 2];
 
         document.getElementById("price").textContent = latestPrice;
         document.getElementById("yesterdayClose").textContent = yesterdayClose;
@@ -176,7 +176,7 @@
     }
   </script>
 
-  <!-- Firebase 讀取健康資料 -->
+  <!-- Firebase 健康資料讀取 -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
@@ -194,20 +194,21 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    const heartRateRef = ref(db, "health/heartRate");
+    // Firebase 健康資料參照
     const stepsRef = ref(db, "health/steps");
-    const tempRef = ref(db, "health/temperature");
-
-    onValue(heartRateRef, (snapshot) => {
-      document.getElementById("heartRate").textContent = snapshot.val() + " bpm";
-    });
+    const sleepDurationRef = ref(db, "health/sleepDuration");
+    const sleepScoreRef = ref(db, "health/sleepScore");
 
     onValue(stepsRef, (snapshot) => {
       document.getElementById("steps").textContent = snapshot.val() + " 步";
     });
 
-    onValue(tempRef, (snapshot) => {
-      document.getElementById("temperature").textContent = snapshot.val() + " ℃";
+    onValue(sleepDurationRef, (snapshot) => {
+      document.getElementById("sleepDuration").textContent = snapshot.val() + " 小時";
+    });
+
+    onValue(sleepScoreRef, (snapshot) => {
+      document.getElementById("sleepScore").textContent = snapshot.val() + " 分";
     });
   </script>
 </body>
