@@ -101,7 +101,51 @@
       <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
       <button onclick="loadStock()">查詢</button>
     </div>
+    
+  <div style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; max-width: 400px;">
+    <h3>🎵 YouTube 音樂播放器</h3>
+    <input type="text" id="ytInput" placeholder="輸入YouTube影片網址或關鍵字" style="width: 80%; padding: 6px;" />
+    <button onclick="playYouTubeVideo()" style="padding: 6px 10px;">播放</button>
+    <div id="ytPlayer" style="margin-top: 10px; width: 100%; height: 225px;"></div>
+  </div>
 
+  <script>
+  async function playYouTubeVideo() {
+    const input = document.getElementById('ytInput').value.trim();
+    const playerDiv = document.getElementById('ytPlayer');
+    
+    // 清空播放器
+    playerDiv.innerHTML = '';
+
+    // 簡單判斷輸入是不是 YouTube 連結
+    const ytRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = input.match(ytRegex);
+
+    let videoId = '';
+
+    if (match && match[1]) {
+      videoId = match[1];
+    } else {
+      // 如果不是連結，就當作關鍵字，用 YouTube 搜尋API（這邊用第三方免費API簡化）
+      // 因為官方API需要金鑰，這裡改用無金鑰的替代方案，或提醒用戶輸入影片連結。
+
+      alert("請輸入有效的 YouTube 影片連結！");
+      return;
+    }
+
+    // 建立 iframe 播放器
+    const iframe = document.createElement('iframe');
+    iframe.width = "100%";
+    iframe.height = "225";
+    iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
+    iframe.frameBorder = "0";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+
+    playerDiv.appendChild(iframe);
+  }
+</script>
+    
     <div>
       <h4>📜 最近股票查詢紀錄</h4>
       <ul id="stockQueryList">
