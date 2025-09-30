@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悅城會議室預約系統 - 2025新版new
+    </title>
+    <script type="module">
+        let isAdmin = false;
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, get } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBcih7IhI_Leas5CWCG_v2ZIljtHKqahMY",
+            authDomain: "onano-10788.firebaseapp.com",
+            databaseURL: "https://onano-10788-default-rtdb.asia-southeast1.firebasedatabase.app/",
+            projectId: "onano-10788",
+            storageBucket: "onano-10788.firebasestorage.app",
+            messagingSenderId: "180832735179",
+            appId: "1:180832735179:web:7abceadc7f4dede11bf04e",
+            measurementId: "G-0XH3GH7JJB"
+        };
+
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const recordsRef = ref(db, 'records');
+
+        const users = [
+            "吳德宏","王清鴻","留瑞蓮","田坤益","邱文聰","李家維","許家豪","李滋芳","劉俊彥","蘇修賢","廠商","其他","管理者"   
+        ];
+
+let finalSelectedUser = ""; 
+let finalStartTime = null;
+let finalEndTime = null;   
+
+function reserveForFuture() {
+    if (!finalSelectedUser || !finalEndTime) {
+        alert("請先套用使用者與時間！");
+        return;
+    }
+
+    const roomId = prompt("請輸入要預約的會議室編號（例如：102）：");
+    if (!roomId || !document.getElementById(roomId)) {
+        alert("無效的會議室 ID");
+        return;
+    }
+
+    const selectedYear = document.getElementById("yearSelect").value;
+    const month = document.getElementById("monthSelect").value;
+    const day = document.getElementById("daySelect").value;
+    const startHour = document.getElementById("startHour").value;
+    const startMinute = document.getElementById("startMinute").value;
+    const endHour = document.getElementById("endHour").value;
+    const endMinute = document.getElementById("endMinute").value;
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const startTime = new Date(selectedYear, month - 1, day, startHour, startMinute);
+    const endTime = new Date(selectedYear, month - 1, day, endHour, endMinute);
+
+    const formattedStartTime = `${selectedYear}/${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')} ${startHour}:${startMinute}`;
+    const formattedEndTime   = `${selectedYear}/${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')} ${endHour}:${endMinute}`;
+
+
+    
+    const reservationData = {
+        roomId: roomId,
+        user: finalSelectedUser,
+        startTime: formattedStartTime,  
+        endTime: formattedEndTime,     
+    };
+
+    const futureRef = ref(db, `futureReservations/${roomId}_${new Date(selectedYear, month - 1, day, startHour, startMinute).getTime()}`);
+    set(futureRef, reservationData)
+        .then(() => {
+            alert("✅ 已預約成功！");
+            loadFutureReservations(); 
+        })
+        .catch(err => {
+            alert("預約失敗：" + err);
+        });
+}
+function loadFutureReservations() {
+    const listElem = document.getElementById("futureReservationsList");
+    listElem.innerHTML = "";
+
+    const futureRef = ref(db, 'futureReservations');
+    onValue(futureRef, snapshot => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        const now = Date.now();
+        const currentUser = document.getElementById("userSelect").value;
+
+        const sorted = Object.entries(data).sort((a, b) => {
+            return new Date(a[1].startTime) - new Date(b[1].startTime);
+        });
+
+        sorted.forEach(([key, res]) => {
+            const li = document.createElement("li");
+
+            const start = new Date(res.startTime);
+            const options = {
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            const localTime = start.toLocaleString('zh-TW', options);
+
+            const end = new Date(res.endTime);
+
+            const year = start.getFullYear();
+            const month = (start.getMonth() + 1).toString().padStart(2, '0');
+            const date = start.getDate().toString().padStart(2, '0');
+            const startHour = start.getHours().toString().padStart(2, '0');
+            const startMin = start.getMinutes().toString().padStart(2, '0');
+            const endHour = end.getHours().toString().padStart(2, '0');
+            const endMin = end.getMinutes().toString().padStart(2, '0');
+
+            const fullDateStr = `${res.startTime} ~ ${res.endTime}`;
+            
+            li.textContent = `會議室${res.roomId} - ${res.user} - ${res.startTime} ~ ${res.endTime}（開始時間${res.startTime}）`;
+
+            if (isAdmin) {
+                const deleteBtn = document.createElement("button");
+                deleteBtn.textContent = "刪除";
+                deleteBtn.style.marginLeft = "10px";
+
+                deleteBtn.onclick = function () {
+                    const password = prompt("請輸入密碼以刪除預約：");
+                    if (password === "Onano_Nb") {
+                        remove(ref(db, `futureReservations/${key}`))
+                            .then(() => {
+                                alert("✅ 預約已刪除");
+                                loadFutureReservations(); 
+                            })
+                            .catch(err => {
+                                alert("❌ 刪除失敗：" + err);
+                            });
+                    } else {
+                        alert("密碼錯誤！");
+                    }
+                };
+
+                li.appendChild(deleteBtn);
+            }
+
+            listElem.appendChild(li);
+        });
+    });
+}
+
+function monitorFutureReservations() {
+    setInterval(() => {
+        const now = new Date();
+
+        const futureRef = ref(db, 'futureReservations');
+        get(futureRef).then(snapshot => {
+            const data = snapshot.val();
+            if (!data) return;
+
+            Object.entries(data).forEach(([key, res]) => {
+                const startTime = new Date(res.startTime);
+                const endTime = new Date(res.endTime);
+                const roomId = res.roomId;
+                const cell = document.getElementById(roomId);
+
+                if (now >= startTime && cell && cell.classList.contains('green')) {
+                    cell.classList.remove('green');
+                    cell.classList.add('red');
+                    cell.textContent = `${roomId} - ${res.user} - ${res.startTime} ~ ${res.endTime}`;
+
+                    const colorRef = ref(db, roomId);
+                    set(colorRef, {
+                        color: 'red',
+                        user: res.user,
+                        startTime: res.startTime,
+                        endTime: res.endTime
+                    });
+
+                    push(recordsRef, {
+                        id: roomId,
+                        action: '使用中（預約自動）',
+                        user: res.user,
+                        startTime: res.startTime,
+                        endTime: res.endTime,
+                        time: new Date().toISOString()
+                    });
+
+
+                    //remove(ref(db, `futureReservations/${key}`));
+                }
+                if (now >= endTime && cell && cell.classList.contains('red')) {
+                    cell.classList.remove('red');
+                    cell.classList.add('green');
+                    cell.textContent = roomId;
+
+                    const colorRef = ref(db, roomId);
+                    set(colorRef, { color: 'green' });
+
+                    push(recordsRef, {
+                        id: roomId,
+                        action: '空閒（預約自動）',
+                        user: res.user,
+                        startTime: res.startTime,
+                        endTime: res.endTime,
+                        time: new Date().toISOString()
+                    });
+                    remove(ref(db, `futureReservations/${key}`));
+                }
+
+
+            });
+        });
+    }, 10000); // 每 10 秒檢查一次
+}
+
+function populateTimeSelectors() {
+    const startHour = document.getElementById("startHour");
+    const startMinute = document.getElementById("startMinute");
+    const endHour = document.getElementById("endHour");
+    const endMinute = document.getElementById("endMinute");
+
+    [startHour, startMinute, endHour, endMinute].forEach(select => select.innerHTML = "");
+
+    for (let h = 8; h < 20; h++) {
+        const hStr = h.toString().padStart(2, '0');
+        const opt1 = new Option(hStr, hStr);
+        const opt2 = new Option(hStr, hStr);
+        startHour.appendChild(opt1);
+        endHour.appendChild(opt2);
+    }
+
+    for (let m = 0; m < 60; m++) {
+        const mStr = m.toString().padStart(2, '0');
+        const opt1 = new Option(mStr, mStr);
+        const opt2 = new Option(mStr, mStr);
+        startMinute.appendChild(opt1);
+        endMinute.appendChild(opt2);
+    }
+    const yearSelect = document.getElementById("yearSelect");
+    const monthSelect = document.getElementById("monthSelect");
+    const daySelect = document.getElementById("daySelect");
+
+    yearSelect.innerHTML = "";
+    monthSelect.innerHTML = "";
+    daySelect.innerHTML = "";
+
+    for (let y = 2025; y <= 2050; y++) {
+    yearSelect.appendChild(new Option(y.toString(), y.toString()));
+    }
+    for (let m = 1; m <= 12; m++) {
+        const mm = m.toString().padStart(2, '0');
+        monthSelect.appendChild(new Option(mm, mm));
+    }
+    for (let d = 1; d <= 31; d++) {
+        const dd = d.toString().padStart(2, '0');
+        daySelect.appendChild(new Option(dd, dd));
+    }
+}
+        
+const applyCustomUserAndTime = () => {
+    console.log("applyCustomUserAndTime triggered"); 
+
+    const dropdownUser = document.getElementById("userSelect").value;
+    const customName = document.getElementById("customUserInput").value.trim();
+
+    const selectedYear = document.getElementById("yearSelect").value;
+    const month = document.getElementById("monthSelect").value;
+    const day = document.getElementById("daySelect").value;
+    const startHour = document.getElementById("startHour").value;
+    const startMinute = document.getElementById("startMinute").value;
+    const endHour = document.getElementById("endHour").value;
+    const endMinute = document.getElementById("endMinute").value;
+
+    if (dropdownUser === "其他") {
+        if (!customName) {
+            alert("請輸入名稱，例如：王大明");
+            return;
+        }
+    } else {
+        if (!dropdownUser || dropdownUser === "") {
+            alert("請選擇使用者名稱");
+            return;
+        }
+    }
+
+    const user = dropdownUser === "其他" ? customName : dropdownUser;
+    finalStartTime = new Date(selectedYear, month - 1, day, startHour, startMinute);
+    finalEndTime   = new Date(selectedYear, month - 1, day, endHour, endMinute);
+
+    finalSelectedUser = user;
+    if (!month || !day || !startHour || !startMinute || !endHour || !endMinute) {
+        alert("請完整選擇時間（年份、月份、日期、開始時間、結束時間）");
+        return;
+    }
+
+    const fullStartTimeString = `${selectedYear}/${month.padStart(2, '0')}/${day.padStart(2, '0')} ${startHour}:${startMinute}`;
+    const fullEndTimeString   = `${selectedYear}/${month.padStart(2, '0')}/${day.padStart(2, '0')} ${endHour}:${endMinute}`;
+
+    finalEndTime = new Date(
+        parseInt(selectedYear),
+        parseInt(month) - 1,
+        parseInt(day),
+        parseInt(endHour),
+        parseInt(endMinute)
+    );
+
+    finalSelectedUser = user;
+
+    const displayInfo = `${user} - ${selectedYear}/${month.padStart(2, '0')}/${day.padStart(2, '0')} ${startHour}:${startMinute} ~ ${selectedYear}/${month.padStart(2, '0')}/${day.padStart(2, '0')} ${endHour}:${endMinute}`;
+
+    localStorage.setItem("selectedUser", finalSelectedUser);
+
+    alert(`✅ 已套用：${displayInfo}`);
+
+    const infoElem = document.getElementById("currentUserInfo");
+    if(infoElem){
+        infoElem.textContent = `已套用使用者：${displayInfo}`;
+        infoElem.style.color = "green";
+    }
+};
+
+
+window.applyCustomUserAndTime = applyCustomUserAndTime;
+
+        window.onload = function() {
+            const userSelect = document.getElementById("userSelect");
+            users.forEach(user => {
+                const option = document.createElement("option");
+                option.value = user;
+                option.textContent = user;
+                userSelect.appendChild(option);
+            });
+            populateTimeSelectors();
+            const savedUser = localStorage.getItem("selectedUser");
+            if (savedUser) {
+                document.getElementById("currentUserInfo").textContent = `已套用：${savedUser}`;
+            }
+
+            const customInput = document.getElementById("customUserInput");
+            customInput.disabled = true;
+            userSelect.addEventListener("change", (e) => {
+    const selectedUser = e.target.value;
+    if (selectedUser === "管理者") {
+        const password = prompt("請輸入密碼以選擇管理者:");
+        if (password === "Onano_Nb") {
+            localStorage.setItem("selectedUser", selectedUser);
+            e.target.value = "管理者";
+            isAdmin = true; 
+        } else {
+            alert("密碼錯誤！");
+            e.target.value = "";
+            isAdmin = false;
+        }
+    } else {
+        localStorage.setItem("selectedUser", selectedUser);
+        isAdmin = false;
+    }
+
+            if (selectedUser === "其他") {
+        customInput.disabled = false;
+        customInput.focus();
+    } else {
+        customInput.disabled = true;
+        customInput.value = "";
+    }
+
+    loadFutureReservations(); 
+});
+
+            updateBlockStatus(); 
+            displayDateTime();
+            loadFutureReservations();
+            monitorFutureReservations();
+
+        setInterval(displayDateTime, 1000);
+        };
+
+        function displayDateTime() {
+            const now = new Date();
+            const options = {
+                timeZone: 'Asia/Taipei',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            };
+
+            const dateTime = now.toLocaleString('zh-TW', options);
+            document.getElementById('datetime').textContent = dateTime;
+        }
+
+        function updateBlockStatus() {
+            const allCells = document.querySelectorAll('td');
+            allCells.forEach(cell => {
+                const id = cell.id;
+                const colorRef = ref(db, id);
+                onValue(colorRef, (snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        cell.classList.remove('green', 'red');
+                        cell.classList.add(data.color);
+                        if (data.color === 'red') {
+                            cell.textContent = `${id} - ${data.user} - ${new Date(data.startTime).toLocaleString('zh-TW')} ~ ${new Date(data.endTime).toLocaleString('zh-TW')}`;
+                        } else {
+                            cell.textContent = `${id}`;
+                        }
+                    } else {
+                        cell.classList.remove('green', 'red');
+                        cell.classList.add('green');
+                        cell.textContent = `${id}`;
+                    }
+                });
+            });
+        }
+        function toggleColor(element) {
+            const id = element.id;
+
+            if (!finalSelectedUser || !finalStartTime || !finalEndTime) {
+                alert("請先套用使用者名稱與時間！");
+                return;
+            }
+
+            const colorRef = ref(db, id);
+
+            if (element.classList.contains('green')) {
+                element.classList.remove('green');
+                element.classList.add('red');
+                element.textContent = `${id} - ${finalSelectedUser} - ${finalStartTime.toLocaleString('zh-TW')} ~ ${finalEndTime.toLocaleString('zh-TW')}`;
+
+                const newRecord = {
+                    id: id,
+                    action: '使用中',
+                    user: finalSelectedUser,
+                    startTime: finalStartTime.toISOString(),
+                    endTime: finalEndTime.toISOString(),
+                    time: new Date().toISOString()
+                };
+
+                set(colorRef, {
+                    color: 'red',
+                    user: finalSelectedUser,
+                    startTime: finalStartTime.toISOString(),
+                    endTime: finalEndTime.toISOString()
+                });
+
+                push(recordsRef, newRecord);
+
+            } else if (element.classList.contains('red')) {
+                element.classList.remove('red');
+                element.classList.add('green');
+                element.textContent = id;
+
+                set(colorRef, { color: 'green' });
+
+                push(recordsRef, {
+                    id: id,
+                    action: '空閒',
+                    user: finalSelectedUser,
+                    startTime: finalStartTime ? finalStartTime.toISOString() : null,
+                    endTime: finalEndTime ? finalEndTime.toISOString() : null,
+                    time: new Date().toISOString()
+                });
+            }
+        }
+
+
+        function showRecords() {
+            const recordList = document.getElementById("recordList");
+            const carNumberInput = document.getElementById("carNumberInput");
+            const userSelect = document.getElementById("userSelect");
+            const selectedUser = userSelect.value;
+
+            const carNumber = carNumberInput.value.trim().toLowerCase();
+
+            onValue(recordsRef, (snapshot) => {
+                const records = snapshot.val();
+                if (!records) return;
+
+                const filteredRecords = Object.entries(records)
+                    .filter(([key, record]) => {
+                        const recordDate = new Date(record.time);
+                        const recordDateStr = recordDate.toISOString().split('T')[0];
+
+                        const isCarNumberMatch = carNumber === "" || record.id.toLowerCase().includes(carNumber);
+                        const isUserMatch = selectedUser === "管理者" || record.user === selectedUser;
+
+                        return isCarNumberMatch && isUserMatch;
+                    })
+                    .reverse();
+
+                recordList.innerHTML = ''; 
+
+                filteredRecords.forEach(([key, record]) => {
+                    const recordItem = document.createElement("li");
+                    const recordTime = new Date(record.time);
+                    const options = {
+                        timeZone: 'Asia/Taipei',
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    };
+                    const localTime = recordTime.toLocaleString('zh-TW', options);
+
+                    recordItem.textContent = `${record.id} - ${record.action} - ${record.user} - ${
+                        record.startTime ? new Date(record.startTime).toLocaleString('zh-TW') : '未設定'
+                    } ~ ${
+                        record.endTime ? new Date(record.endTime).toLocaleString('zh-TW') : '未設定'
+                    } - 操作時間: ${localTime}`;
+
+                    const deleteButton = document.createElement("button");
+                    deleteButton.textContent = "刪除";
+                    deleteButton.onclick = function() {
+                        const password = prompt("請輸入密碼以刪除紀錄:");
+                        if (password === "Onano_Nb") {
+                            remove(ref(db, 'records/' + key)).then(() => {
+                                alert("紀錄已刪除！");
+                                showRecords();  
+                            }).catch((error) => {
+                                alert("刪除失敗：" + error);
+                            });
+                        } else {
+                            alert("密碼錯誤！");
+                        }
+                    };
+
+                    recordItem.appendChild(deleteButton);
+                    recordList.appendChild(recordItem);
+                });
+            });
+        }
+
+        window.toggleColor = toggleColor;
+        window.showRecords = showRecords;
+        window.reserveForFuture = reserveForFuture;
+    </script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-image: url('https://i.meee.com.tw/445Ea5W.png');
+            background-size: cover;
+            background-attachment: fixed;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #000;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .green {
+            background-color: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+        .red {
+            background-color: #dc3545;
+            color: white;
+            font-weight: bold;
+        }
+        .first-row td {
+            width: 16.6%;
+            height: 60px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .second-row td {
+            width: 12.5%;
+            height: 60px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        h1 {
+            font-family: 'DFKai-SB', "標楷體", serif;
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        #datetime {
+            font-size: 18px;
+            font-family: 'Arial', sans-serif;
+            margin-left: 20px;
+        }
+        select {
+            margin: 20px 0;
+        }
+        #recordList {
+            margin-top: 20px;
+            padding: 0;
+        }
+        ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        li {
+            padding: 5px;
+            border-bottom: 1px solid #ddd;
+        }
+        button {
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        #systemImage {
+            display: block;
+            margin: 20px auto;
+            max-width: 10%;
+            height: auto;
+        }
+        #newsTicker {
+            background-color: #f8f9fa;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        #newsTicker span {
+            display: inline-block;
+            padding-right: 100%;
+            animation: ticker 30s linear infinite;
+        }
+        @keyframes ticker {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+        #customUserInput {
+        width: 180px;
+        padding: 5px;
+        font-size: 14px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>
+        悅城會議室預約系統
+    </h1>
+
+    <h1>
+        ⌚<span id="datetime"></span>
+    </h1>
+
+    <a href="http://www.onano-nm.com/">
+        <img id="systemImage" src="https://i.meee.com.tw/VFCitmP.png" alt="悅城會議室預約系統圖片" />
+    </a>
+<div>
+    <div>
+    <h2>👨‍👩‍👦 預約會議室</h2>
+    <ul id="futureReservationsList"></ul>
+</div>
+    <label for="userSelect">選擇用戶: </label>
+    <select id="userSelect">
+        <option value="">請選擇</option>
+    </select>
+
+    <input type="text" id="customUserInput" placeholder="請先點選:其他~才可輸入名稱" />
+    <div>
+    <label for="yearSelect">年份：</label>
+    <select id="yearSelect"></select>
+        
+    <label for="monthSelect">月份：</label>
+    <select id="monthSelect"></select>
+
+    <label for="daySelect">日期：</label>
+    <select id="daySelect"></select>
+    </div>
+
+    <div>
+    <label for="startHour">開始時間：</label>
+    <select id="startHour"></select> :
+    <select id="startMinute"></select>
+
+    <label for="endHour">結束時間：</label>
+    <select id="endHour"></select> :
+    <select id="endMinute"></select>
+    <button onclick="applyCustomUserAndTime()">套用</button>
+    <button onclick="reserveForFuture()">預約</button>
+    <p id="currentUserInfo" style="margin-top: 10px;"></p>
+    </div>
+</div>
+
+    <div id="newsTicker">
+        <span>最新消息: 請同仁踴躍使用!!</span>
+    </div>
+
+    <h2>小型會議室(可容納4~5人)</h2>
+    <table class="first-row">
+        <tr>
+            <td class="green" id="102" onclick="toggleColor(this)">102</td>
+            <td class="green" id="103" onclick="toggleColor(this)">103</td>
+            <td class="green" id="104" onclick="toggleColor(this)">104</td>
+            <td class="green" id="107" onclick="toggleColor(this)">107</td>
+            <td class="green" id="108" onclick="toggleColor(this)">108</td>
+        </tr>
+    </table>
+
+    <h2>中型會議室(可容納6~10人)</h2>
+    <table class="second-row">
+        <tr>
+            <td class="green" id="105" onclick="toggleColor(this)">105</td>
+            <td class="green" id="106" onclick="toggleColor(this)">106</td>
+            <td class="green" id="A01" onclick="toggleColor(this)">A01</td>
+            <td class="green" id="A02" onclick="toggleColor(this)">A02</td>
+        </tr>
+    </table>
+
+    <h2>大型會議室(可容納10~12人)</h2>
+    <table class="second-row">
+        <tr>
+            <td class="green" id="101" onclick="toggleColor(this)">101</td>
+        </tr>
+    </table>
+
+    <div>
+        <label for="carNumberInput">搜尋預約:</label>
+        <input type="text" id="carNumberInput" placeholder="輸入會議室ID...">
+    </div>
+
+    <button onclick="showRecords()">顯示紀錄</button>
+
+    <ul id="recordList"></ul>
+
+</body>
+</html>
+
+
