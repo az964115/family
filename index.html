@@ -91,7 +91,6 @@
       }
 
       try {
-        // 查股票名稱
         const searchResp = await fetch(`https://www.twse.com.tw/zh/api/codeQuery?query=${symbol}`);
         const searchData = await searchResp.json();
 
@@ -106,11 +105,9 @@
         document.getElementById("name").textContent = name;
         document.getElementById("code").textContent = code;
 
-        // 今日日期
         const today = new Date();
         const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
 
-        // 取歷史每日資料
         const priceResp = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`);
         const priceData = await priceResp.json();
 
@@ -124,7 +121,6 @@
         const closePrices = last20.map(d => parseFloat(d[6].replace(/,/g, '')));
         const volumes = last20.map(d => parseInt(d[1].replace(/,/g, ''), 10));
 
-        // 更新價格資料
         const latestPrice = closePrices[closePrices.length - 1];
         const yesterdayClose = closePrices[closePrices.length - 2];
         const latestVolume = volumes[volumes.length - 1];
@@ -143,7 +139,6 @@
         changeSpan.textContent = changeText;
         changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "gray");
 
-        // 畫圖
         if (window.myChart) window.myChart.destroy();
 
         const ctx = document.getElementById('chart').getContext('2d');
