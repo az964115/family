@@ -2,10 +2,10 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>家庭 GPT 聊天小幫手</title>
+  <title>GPT 聊天助手</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
-    #chat { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    body { font-family: sans-serif; background: #f4f4f4; padding: 20px; }
+    #chat { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; }
     .msg { margin: 10px 0; }
     .user { color: blue; }
     .bot { color: green; }
@@ -23,11 +23,11 @@
   </div>
 
   <script>
-    const apiKey = "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"; // ← 在這裡貼上你的金鑰
+    const apiKey = "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"; // ← 改成你自己的 API 金鑰
 
     async function sendMessage() {
       const input = document.getElementById("userInput");
-      const message = input.value;
+      const message = input.value.trim();
       if (!message) return;
 
       addMessage("你", message, "user");
@@ -48,13 +48,26 @@
           })
         });
 
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("API 錯誤：", errorText);
+          addMessage("系統", `API 請求錯誤：${response.status}`, "bot");
+          return;
+        }
+
         const data = await response.json();
-        const reply = data.choices?.[0]?.message?.content || "(沒有回應)";
-        addMessage("GPT", reply, "bot");
+        console.log("API 回傳內容：", data);
+
+        const reply = data?.choices?.[0]?.message?.content?.trim();
+        if (reply) {
+          addMessage("GPT", reply, "bot");
+        } else {
+          addMessage("GPT", "(回傳為空)", "bot");
+        }
 
       } catch (error) {
-        console.error("錯誤:", error);
-        addMessage("系統", "發送失敗，請檢查 API 金鑰或網路狀態。", "bot");
+        console.error("例外錯誤：", error);
+        addMessage("GPT", `錯誤：${error.message}`, "bot");
       }
     }
 
@@ -64,6 +77,7 @@
       msg.className = `msg ${cls}`;
       msg.textContent = `${sender}：${text}`;
       messagesDiv.appendChild(msg);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
   </script>
 </body>
