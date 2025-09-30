@@ -2,260 +2,166 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>🐷 豬豬內網 - 多功能總覽</title>
+  <title>豬豬內網</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      max-width: 720px;
-      margin: 20px auto;
+      font-family: sans-serif;
       padding: 20px;
-      background: #fff9f0;
-      color: #333;
-      line-height: 1.6;
+      max-width: 700px;
+      margin: auto;
+      background-color: white;
+      color: black;
+      transition: background-color 0.3s, color 0.3s;
     }
-    h1, h2 {
-      text-align: center;
-      color: #d35400;
+    input, button {
+      padding: 8px;
+      font-size: 16px;
     }
-    .section {
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 0 10px #f0b27a88;
-      padding: 15px 25px;
-      margin-bottom: 25px;
+    #info {
+      margin-top: 20px;
     }
-    .section h2 {
-      margin-bottom: 15px;
-      border-bottom: 2px solid #f39c12;
-      padding-bottom: 5px;
+    .field {
+      margin-bottom: 12px;
     }
-    #weatherIcon {
-      vertical-align: middle;
-      width: 40px;
-      height: 40px;
-    }
-    .quote {
-      font-style: italic;
-      font-size: 1.2rem;
-      color: #6e2c00;
-      margin: 15px 0;
-      text-align: center;
-    }
-    .news-list {
-      list-style: none;
-      padding: 0;
-    }
-    .news-list li {
-      margin-bottom: 10px;
-    }
-    .news-list a {
-      color: #d35400;
-      text-decoration: none;
-    }
-    .news-list a:hover {
-      text-decoration: underline;
-    }
-    #stockChange {
-      font-weight: bold;
-    }
-    .stock-up {
-      color: red;
-    }
-    .stock-down {
-      color: green;
-    }
-    .tools {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: space-around;
-    }
-    .tool-box {
-      border: 1px solid #f0b27a;
-      border-radius: 8px;
-      padding: 15px;
-      width: 320px;
-      background: #fff3e0;
-      box-shadow: 2px 2px 8px #f7d6a7;
-    }
-    input[type="number"], input[type="text"] {
+    #chart {
       width: 100%;
-      padding: 6px;
-      font-size: 1rem;
-      margin-bottom: 10px;
-      border: 1px solid #d35400;
-      border-radius: 4px;
+      height: 300px;
     }
-    button {
-      background-color: #d35400;
-      border: none;
-      color: white;
-      padding: 10px 15px;
-      font-size: 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:hover {
-      background-color: #e67e22;
-    }
-    #countdownDisplay {
-      font-size: 2rem;
-      color: #af601a;
+    .header {
       text-align: center;
+      margin-bottom: 20px;
+    }
+    .announcement {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-left: 5px solid orange;
+      margin-bottom: 20px;
+    }
+    .dark-mode {
+      background-color: #121212;
+      color: #f0f0f0;
+    }
+    .dark-mode .announcement {
+      background-color: #2a2a2a;
+      border-left-color: #ffa500;
+    }
+    .toggle-button {
+      float: right;
+      margin-top: -50px;
+    }
+    #stockQueryList {
+      list-style:none; 
+      padding:0; 
+      max-height: 150px; 
+      overflow-y: auto; 
+      border: 1px solid #f0b27a; 
+      border-radius: 6px; 
+      background:#fff3e0;
       margin-top: 10px;
-      font-weight: bold;
+      cursor: default;
     }
-    @media (max-width: 700px) {
-      .tools {
-        flex-direction: column;
-        align-items: center;
-      }
-      .tool-box {
-        width: 90%;
-      }
+    #stockQueryList li {
+      padding: 6px 10px;
+      border-bottom: 1px solid #f9d6a5;
+      cursor: pointer;
+    }
+    #stockQueryList li:hover {
+      background-color: #ffe0b3;
     }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
+  <div class="header">
+    <h1>🐷 豬豬內網</h1>
+    <button class="toggle-button" onclick="toggleDarkMode()">切換夜間模式</button>
+    <h3>🐷 豬豬公告區</h3>
+    <div class="announcement">📢 1010烤肉不見不散！</div>
+  </div>
 
-  <h1>🐷 豬豬內網 - 多功能總覽</h1>
+  <div class="announcement">📈 健康資訊區</div>
+  <div class="field"><strong>步數：</strong><span id="steps">讀取中...</span></div>
 
-  <!-- 天氣資訊區 -->
-  <section class="section" id="weatherSection">
-    <h2>📍 天氣資訊</h2>
-    <div>
-      <strong>城市：</strong><span id="city">讀取中...</span><br />
-      <strong>天氣：</strong><img id="weatherIcon" src="" alt="weather icon" /> <span id="weatherDesc">讀取中...</span><br />
-      <strong>溫度：</strong><span id="temp">--</span> ℃<br />
-      <strong>濕度：</strong><span id="humidity">--</span> %
-    </div>
-  </section>
+  <hr />
 
-  <!-- 每日一句 -->
-  <section class="section" id="quoteSection">
-    <h2>💡 每日一句勵志語錄</h2>
-    <div class="quote" id="dailyQuote">讀取中...</div>
-  </section>
+  <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
+  <button onclick="loadStock()">查詢</button>
 
-  <!-- 新聞簡報 -->
-  <section class="section" id="newsSection">
-    <h2>📰 今日熱門新聞</h2>
-    <ul class="news-list" id="newsList">
-      <li>讀取中...</li>
+  <div id="info">
+    <div class="field"><strong>名稱：</strong><span id="name"></span></div>
+    <div class="field"><strong>代碼：</strong><span id="code"></span></div>
+    <div class="field"><strong>最新成交價：</strong><span id="price"></span></div>
+    <div class="field"><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
+    <div class="field"><strong>漲跌：</strong><span id="change"></span></div>
+    <div class="field"><strong>成交量：</strong><span id="volume"></span></div>
+    <div class="field"><strong>昨日成交量：</strong><span id="yesterdayVolume"></span></div>
+  </div>
+
+  <canvas id="chart"></canvas>
+
+  <!-- 股票查詢紀錄區 -->
+  <section id="stockHistorySection">
+    <h2>📜 最近股票查詢紀錄</h2>
+    <ul id="stockQueryList">
+      <li>暫無查詢紀錄</li>
     </ul>
+    <small>點擊紀錄可快速套用股票代碼</small>
   </section>
 
-  <!-- 股市總覽 -->
-  <section class="section" id="stockSection">
-    <h2>📈 台灣股市總覽</h2>
-    <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
-    <button onclick="loadStock()">查詢</button>
-    <div id="stockInfo" style="margin-top: 15px;">
-      <div><strong>名稱：</strong><span id="name"></span></div>
-      <div><strong>代碼：</strong><span id="code"></span></div>
-      <div><strong>最新成交價：</strong><span id="price"></span></div>
-      <div><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
-      <div><strong>漲跌：</strong><span id="change" id="stockChange"></span></div>
-      <div><strong>成交量：</strong><span id="volume"></span></div>
-      <div><strong>昨日成交量：</strong><span id="yesterdayVolume"></span></div>
-    </div>
-    <canvas id="chart" style="margin-top:15px;"></canvas>
-  </section>
-
-  <!-- 小工具區 -->
-  <section class="section" id="toolsSection">
-    <h2>🛠 小工具區</h2>
-    <div class="tools">
-      <!-- 計算機 -->
-      <div class="tool-box" id="calculatorBox">
-        <h3>計算機</h3>
-        <input type="text" id="calcInput" placeholder="輸入算式，例如：3+4*2" />
-        <button onclick="calculate()">計算</button>
-        <div id="calcResult" style="margin-top: 10px; font-weight:bold;"></div>
-      </div>
-
-      <!-- 倒數計時器 -->
-      <div class="tool-box" id="countdownBox">
-        <h3>倒數計時器</h3>
-        <input type="number" id="countdownInput" placeholder="輸入秒數" />
-        <button onclick="startCountdown()">開始倒數</button>
-        <div id="countdownDisplay"></div>
-      </div>
-    </div>
-  </section>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-    // 天氣API設定（請先自行申請OpenWeatherMap免費API KEY）
-    const weatherApiKey = '67fc7a1bcf794a2c46fc07c639b0048d';
-    const cityName = 'Taoyuan'; // 你也可以用動態定位取得城市
-
-    async function loadWeather() {
-      try {
-        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${weatherApiKey}&units=metric&lang=zh_tw`);
-        const data = await res.json();
-        if (data.cod !== 200) {
-          document.getElementById('city').textContent = '無法取得天氣';
-          document.getElementById('weatherDesc').textContent = '';
-          return;
-        }
-        document.getElementById('city').textContent = data.name;
-        document.getElementById('temp').textContent = data.main.temp.toFixed(1);
-        document.getElementById('humidity').textContent = data.main.humidity;
-        document.getElementById('weatherDesc').textContent = data.weather[0].description;
-        document.getElementById('weatherIcon').src = `https://openweathermap.org/img/wn/${data.weather[0].icon}.png`;
-      } catch (e) {
-        document.getElementById('city').textContent = '錯誤發生';
-        document.getElementById('weatherDesc').textContent = '';
-        console.error(e);
-      }
+    let isDark = false;
+    function toggleDarkMode() {
+      isDark = !isDark;
+      document.body.classList.toggle('dark-mode', isDark);
     }
 
-    // 每日一句勵志語錄陣列
-    const quotes = [
-      "成功不是終點，失敗也不是終結，最重要的是繼續前進。",
-      "學習如逆水行舟，不進則退。",
-      "你的時間有限，不要浪費於重複別人的生活。",
-      "不經歷風雨，怎能見彩虹？",
-      "心有多大，舞台就有多大。",
-      "困難是成功的墊腳石，勇敢迎接它。",
-      "每天進步一點點，勝過停滯不前。",
-      "熱愛生活，生活才會回報你。",
-      "不要害怕改變，改變是成長的開始。",
-      "夢想不是空想，而是行動的開始。"
-    ];
-    function showQuote() {
-      const idx = Math.floor(Math.random() * quotes.length);
-      document.getElementById('dailyQuote').textContent = quotes[idx];
+    // Firebase 配置，請替換成你的專案資訊
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
+      authDomain: "piggynet-93c33.firebaseapp.com",
+      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "piggynet-93c33",
+      storageBucket: "piggynet-93c33.appspot.com",
+      messagingSenderId: "65171780729",
+      appId: "1:65171780729:web:ce5f7272f25a75f43490a8"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    async function addStockQueryRecord(stockCode) {
+      const timestamp = new Date().toISOString();
+      const newRef = db.ref('stockQueries').push();
+      await newRef.set({ stockCode, timestamp });
+      loadStockQueryRecords();
     }
 
-    // 新聞簡報 (NewsAPI)
-    // 請先申請 https://newsapi.org 免費API KEY
-    const newsApiKey = 'a884a483999c4ef6b89fdf13b4c0a072';
-
-    async function loadNews() {
-      try {
-        const res = await fetch(`https://newsapi.org/v2/top-headlines?country=tw&apiKey=${newsApiKey}`);
-        const data = await res.json();
-        const list = document.getElementById('newsList');
+    function loadStockQueryRecords() {
+      const recordsRef = db.ref('stockQueries').limitToLast(5);
+      recordsRef.off();
+      recordsRef.on('value', snapshot => {
+        const records = snapshot.val();
+        const list = document.getElementById('stockQueryList');
         list.innerHTML = '';
-        if (!data.articles || data.articles.length === 0) {
-          list.innerHTML = '<li>找不到新聞</li>';
+        if (!records) {
+          list.innerHTML = '<li>暫無查詢紀錄</li>';
           return;
         }
-        data.articles.slice(0, 5).forEach(article => {
+        const sortedRecords = Object.values(records).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        sortedRecords.forEach(record => {
           const li = document.createElement('li');
-          li.innerHTML = `<a href="${article.url}" target="_blank" rel="noopener">${article.title}</a>`;
+          li.textContent = `${record.stockCode} — ${new Date(record.timestamp).toLocaleString()}`;
+          li.onclick = () => {
+            document.getElementById('symbolInput').value = record.stockCode;
+          };
           list.appendChild(li);
         });
-      } catch(e) {
-        document.getElementById('newsList').innerHTML = '<li>新聞載入失敗</li>';
-        console.error(e);
-      }
+      });
     }
 
-    // 股市查詢 - 你原本的TWSE API
     async function loadStock() {
       const symbol = document.getElementById("symbolInput").value.trim();
       if (!symbol) {
@@ -305,15 +211,11 @@
 
         const changeAmount = (latestPrice - yesterdayClose).toFixed(2);
         const changePercent = ((changeAmount / yesterdayClose) * 100).toFixed(2);
+        const changeText = `${changeAmount} (${changePercent}%)`;
+
         const changeSpan = document.getElementById("change");
-        changeSpan.textContent = `${changeAmount} (${changePercent}%)`;
-        if (changeAmount > 0) {
-          changeSpan.className = 'stock-up';
-        } else if (changeAmount < 0) {
-          changeSpan.className = 'stock-down';
-        } else {
-          changeSpan.className = '';
-        }
+        changeSpan.textContent = changeText;
+        changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "gray");
 
         if (window.myChart) window.myChart.destroy();
 
@@ -338,54 +240,30 @@
           }
         });
 
+        await addStockQueryRecord(symbol);
+
       } catch (error) {
         alert("錯誤發生，請稍後再試");
         console.error(error);
       }
     }
 
-    // 計算機功能
-    function calculate() {
-      const input = document.getElementById('calcInput').value;
-      try {
-        // eslint-disable-next-line no-eval
-        const result = eval(input);
-        document.getElementById('calcResult').textContent = '結果：' + result;
-      } catch {
-        document.getElementById('calcResult').textContent = '錯誤：請輸入有效的數學表達式';
-      }
-    }
+    // 健康資訊：只讀取步數
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
 
-    // 倒數計時器功能
-    let countdownTimer = null;
-    function startCountdown() {
-      if (countdownTimer) clearInterval(countdownTimer);
-      let seconds = parseInt(document.getElementById('countdownInput').value);
-      if (isNaN(seconds) || seconds <= 0) {
-        alert('請輸入正確的秒數');
-        return;
-      }
-      const display = document.getElementById('countdownDisplay');
-      display.textContent = seconds;
+    const app = initializeApp(firebaseConfig);
+    const dbNew = getDatabase(app);
 
-      countdownTimer = setInterval(() => {
-        seconds--;
-        display.textContent = seconds;
-        if (seconds <= 0) {
-          clearInterval(countdownTimer);
-          display.textContent = '時間到！⏰';
-          alert('倒數計時結束！');
-        }
-      }, 1000);
-    }
+    const stepsRef = ref(dbNew, "health/steps");
+    onValue(stepsRef, (snapshot) => {
+      document.getElementById("steps").textContent = snapshot.val() + " 步";
+    });
 
-    // 頁面載入時執行
+    // 頁面載入時載入股票查詢紀錄
     window.onload = () => {
-      loadWeather();
-      showQuote();
-      loadNews();
+      loadStockQueryRecords();
     };
   </script>
-
 </body>
 </html>
