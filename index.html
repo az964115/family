@@ -2,19 +2,63 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>台股即時資訊＋新聞</title>
+  <title>豬豬內網</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    input, button { padding: 8px; font-size: 16px; }
-    #info { margin-top: 20px; }
-    .field { margin-bottom: 12px; }
-    #chart { width: 100%; height: 300px; }
-    #newsList { margin-top: 20px; }
-    #newsList li { margin-bottom: 8px; }
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 700px;
+      margin: auto;
+      background-color: white;
+      color: black;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    input, button {
+      padding: 8px;
+      font-size: 16px;
+    }
+    #info {
+      margin-top: 20px;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    #chart {
+      width: 100%;
+      height: 300px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .announcement {
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-left: 5px solid orange;
+      margin-bottom: 20px;
+    }
+    .dark-mode {
+      background-color: #121212;
+      color: #f0f0f0;
+    }
+    .dark-mode .announcement {
+      background-color: #2a2a2a;
+      border-left-color: #ffa500;
+    }
+    .toggle-button {
+      float: right;
+      margin-top: -50px;
+    }
   </style>
 </head>
 <body>
-  <h1>台股資訊查詢</h1>
+  <div class="header">
+    <h1>🐷 豬豬內網</h1>
+    <button class="toggle-button" onclick="toggleDarkMode()">切換夜間模式</button>
+    <h3>🐷 豬豬公告區</h3>
+    <div class="announcement">📢 1010烤肉不見不散！</div>
+  </div>
+
   <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
   <button onclick="loadStock()">查詢</button>
 
@@ -25,15 +69,20 @@
     <div class="field"><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
     <div class="field"><strong>漲跌：</strong><span id="change"></span></div>
     <div class="field"><strong>成交量：</strong><span id="volume"></span></div>
+    <div class="field"><strong>昨日成交量：</strong><span id="yesterdayVolume"></span></div>
   </div>
 
   <canvas id="chart"></canvas>
 
-  <h2>最新相關新聞</h2>
-  <ul id="newsList"></ul>
-
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    let isDark = false;
+
+    function toggleDarkMode() {
+      isDark = !isDark;
+      document.body.classList.toggle('dark-mode', isDark);
+    }
+
     async function loadStock() {
       const symbol = document.getElementById("symbolInput").value.trim();
       if (!symbol) {
@@ -42,7 +91,7 @@
       }
 
       try {
-        // 先用 codeQuery 查名稱與代碼
+        // 查股票名稱
         const searchResp = await fetch(`https://www.twse.com.tw/zh/api/codeQuery?query=${symbol}`);
         const searchData = await searchResp.json();
 
@@ -57,15 +106,11 @@
         document.getElementById("name").textContent = name;
         document.getElementById("code").textContent = code;
 
-        // 取得最近 20 個交易日的資料繪製圖表
+        // 今日日期
         const today = new Date();
-        let year = today.getFullYear();
-        let month = today.getMonth() + 1; // 1-12
-        let day = today.getDate();
-        // 日期格式 YYYYMMDD (用今天日期，若無資料會回傳最近交易日)
-        const dateStr = `${year}${month.toString().padStart(2,"0")}${day.toString().padStart(2,"0")}`;
+        const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
 
-        // 抓最近 20 天股票日成交資訊
+        // 取歷史每日資料
         const priceResp = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`);
         const priceData = await priceResp.json();
 
@@ -74,36 +119,32 @@
           return;
         }
 
-        // 取最近20筆交易資料(如果超過20筆則取前20筆)
         const last20 = priceData.data.slice(-20);
+        const labels = last20.map(d => d[0]);
+        const closePrices = last20.map(d => parseFloat(d[6].replace(/,/g, '')));
+        const volumes = last20.map(d => parseInt(d[1].replace(/,/g, ''), 10));
 
-        // 畫圖用日期與收盤價
-        const labels = last20.map(d => d[0]); // 日期
-        const closePrices = last20.map(d => parseFloat(d[6].replace(/,/g, ''))); // 收盤價
-        const volumes = last20.map(d => parseInt(d[1].replace(/,/g, ''), 10)); // 成交量
-
-        // 更新昨日收盤價（最後第二筆）
-        const yesterdayClose = closePrices.length >= 2 ? closePrices[closePrices.length - 2] : closePrices[closePrices.length - 1];
-        document.getElementById("yesterdayClose").textContent = yesterdayClose;
-
-        // 今日最新成交價（最後一筆）
+        // 更新價格資料
         const latestPrice = closePrices[closePrices.length - 1];
-        document.getElementById("price").textContent = latestPrice;
+        const yesterdayClose = closePrices[closePrices.length - 2];
+        const latestVolume = volumes[volumes.length - 1];
+        const yesterdayVolume = volumes[volumes.length - 2];
 
-        // 漲跌金額、百分比
+        document.getElementById("price").textContent = latestPrice;
+        document.getElementById("yesterdayClose").textContent = yesterdayClose;
+        document.getElementById("volume").textContent = latestVolume.toLocaleString();
+        document.getElementById("yesterdayVolume").textContent = yesterdayVolume.toLocaleString();
+
         const changeAmount = (latestPrice - yesterdayClose).toFixed(2);
         const changePercent = ((changeAmount / yesterdayClose) * 100).toFixed(2);
         const changeText = `${changeAmount} (${changePercent}%)`;
+
         const changeSpan = document.getElementById("change");
         changeSpan.textContent = changeText;
-        changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "black");
+        changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "gray");
 
-        // 最新成交量（最後一筆）
-        const latestVolume = volumes[volumes.length - 1];
-        document.getElementById("volume").textContent = latestVolume.toLocaleString();
-
-        // 畫收盤價走勢圖
-        if(window.myChart) window.myChart.destroy();  // 移除舊圖
+        // 畫圖
+        if (window.myChart) window.myChart.destroy();
 
         const ctx = document.getElementById('chart').getContext('2d');
         window.myChart = new Chart(ctx, {
@@ -126,49 +167,8 @@
           }
         });
 
-        // 抓最新相關新聞（使用 Yahoo 財經 RSS）
-        loadNews(name);
-
       } catch (error) {
-        alert("發生錯誤，請稍後再試");
-        console.error(error);
-      }
-    }
-
-    async function loadNews(stockName) {
-      const newsList = document.getElementById("newsList");
-      newsList.innerHTML = "<li>載入中...</li>";
-
-      try {
-        // Yahoo 財經 RSS 範例：使用 Google News 的 RSS 查股票相關新聞（不保證每次都有效）
-        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(stockName + " 股票")}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
-
-        const rssResponse = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`);
-        const rssData = await rssResponse.json();
-
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(rssData.contents, "text/xml");
-
-        const items = xmlDoc.querySelectorAll("item");
-        newsList.innerHTML = "";
-
-        if(items.length === 0) {
-          newsList.innerHTML = "<li>找不到相關新聞</li>";
-          return;
-        }
-
-        for(let i = 0; i < Math.min(5, items.length); i++) {
-          const item = items[i];
-          const title = item.querySelector("title").textContent;
-          const link = item.querySelector("link").textContent;
-          const pubDate = item.querySelector("pubDate").textContent;
-
-          const li = document.createElement("li");
-          li.innerHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a> <br><small>${pubDate}</small>`;
-          newsList.appendChild(li);
-        }
-      } catch (error) {
-        newsList.innerHTML = "<li>新聞載入失敗</li>";
+        alert("錯誤發生，請稍後再試");
         console.error(error);
       }
     }
