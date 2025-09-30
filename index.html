@@ -59,6 +59,13 @@
     <div class="announcement">📢 1010烤肉不見不散！</div>
   </div>
 
+  <div class="announcement">📈 健康資訊區</div>
+  <div class="field"><strong>心率：</strong><span id="heartRate">讀取中...</span></div>
+  <div class="field"><strong>步數：</strong><span id="steps">讀取中...</span></div>
+  <div class="field"><strong>體溫：</strong><span id="temperature">讀取中...</span></div>
+
+  <hr />
+
   <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
   <button onclick="loadStock()">查詢</button>
 
@@ -124,7 +131,7 @@
         const latestPrice = closePrices[closePrices.length - 1];
         const yesterdayClose = closePrices[closePrices.length - 2];
         const latestVolume = volumes[volumes.length - 1];
-        const yesterdayVolume = volumes[volumes.length - 2];
+        const yesterdayVolume = volumes[yesterdayVolume.length - 2];
 
         document.getElementById("price").textContent = latestPrice;
         document.getElementById("yesterdayClose").textContent = yesterdayClose;
@@ -167,6 +174,41 @@
         console.error(error);
       }
     }
+  </script>
+
+  <!-- Firebase 讀取健康資料 -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
+      authDomain: "piggynet-93c33.firebaseapp.com",
+      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "piggynet-93c33",
+      storageBucket: "piggynet-93c33.appspot.com",
+      messagingSenderId: "65171780729",
+      appId: "1:65171780729:web:ce5f7272f25a75f43490a8"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const heartRateRef = ref(db, "health/heartRate");
+    const stepsRef = ref(db, "health/steps");
+    const tempRef = ref(db, "health/temperature");
+
+    onValue(heartRateRef, (snapshot) => {
+      document.getElementById("heartRate").textContent = snapshot.val() + " bpm";
+    });
+
+    onValue(stepsRef, (snapshot) => {
+      document.getElementById("steps").textContent = snapshot.val() + " 步";
+    });
+
+    onValue(tempRef, (snapshot) => {
+      document.getElementById("temperature").textContent = snapshot.val() + " ℃";
+    });
   </script>
 </body>
 </html>
