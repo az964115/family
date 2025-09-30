@@ -102,61 +102,7 @@
       <button onclick="loadStock()">查詢</button>
     </div>
     
-  <div style="margin-top: 20px; border: 1px solid #ccc; padding: 10px; max-width: 400px;">
-  <h3>🎵 YouTube 搜尋播放</h3>
-  <input type="text" id="ytSearchInput" placeholder="輸入關鍵字搜尋影片" style="width: 80%; padding: 6px;" />
-  <button onclick="searchAndPlay()">搜尋播放</button>
-  <div id="ytPlayer" style="margin-top: 10px; width: 100%; height: 225px;"></div>
-</div>
-
-<script>
-  async function searchAndPlay() {
-    const query = document.getElementById('ytSearchInput').value.trim();
-    const playerDiv = document.getElementById('ytPlayer');
-    playerDiv.innerHTML = '';
-
-    if (!query) {
-      alert("請輸入搜尋關鍵字！");
-      return;
-    }
-
-    try {
-      // 使用免費的 Youtube 搜尋API (第三方)取得影片ID
-      // API說明：https://rapidapi.com/ytdlfree/api/youtube-search-results
-      // 這裡示範用無API key的簡易方案 - 用 CORS proxy+Google搜尋，但不穩定
-      // 更可靠的方法是自己申請YouTube Data API Key
-      
-      const response = await fetch(`https://ytube-v2.p.rapidapi.com/search?query=${encodeURIComponent(query)}&type=video`, {
-        "method": "GET",
-        "headers": {
-          "X-RapidAPI-Key": "cd7b50759emsh168ef797bcfb33fp1ecec7jsn13651015c3db",
-          "X-RapidAPI-Host": "ytube-v2.p.rapidapi.com"
-        }
-      });
-      const data = await response.json();
-      if (!data.contents || data.contents.length === 0) {
-        alert("找不到影片！");
-        return;
-      }
-      const videoId = data.contents[0].video.videoId;
-
-      const iframe = document.createElement('iframe');
-      iframe.width = "100%";
-      iframe.height = "225";
-      iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1&controls=1`;
-      iframe.frameBorder = "0";
-      iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-      iframe.allowFullscreen = true;
-
-      playerDiv.appendChild(iframe);
-
-    } catch (err) {
-      console.error(err);
-      alert("搜尋發生錯誤，請稍後再試");
-    }
-  }
-</script>
-    
+  
     <div>
       <h4>📜 最近股票查詢紀錄</h4>
       <ul id="stockQueryList">
