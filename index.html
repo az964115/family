@@ -2,24 +2,37 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>TWSE 股票查詢示範</title>
+  <title>台股即時資訊＋新聞</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
+    body { font-family: sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, button { padding: 8px; font-size: 16px; }
     #info { margin-top: 20px; }
-    .field { margin-bottom: 10px; }
+    .field { margin-bottom: 12px; }
+    #chart { width: 100%; height: 300px; }
+    #newsList { margin-top: 20px; }
+    #newsList li { margin-bottom: 8px; }
   </style>
 </head>
 <body>
-  <h1>台股查詢（TWSE API）</h1>
+  <h1>台股資訊查詢</h1>
   <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
   <button onclick="loadStock()">查詢</button>
 
   <div id="info">
     <div class="field"><strong>名稱：</strong><span id="name"></span></div>
     <div class="field"><strong>代碼：</strong><span id="code"></span></div>
-    <div class="field"><strong>成交價：</strong><span id="price"></span></div>
+    <div class="field"><strong>最新成交價：</strong><span id="price"></span></div>
+    <div class="field"><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
+    <div class="field"><strong>漲跌：</strong><span id="change"></span></div>
+    <div class="field"><strong>成交量：</strong><span id="volume"></span></div>
   </div>
 
+  <canvas id="chart"></canvas>
+
+  <h2>最新相關新聞</h2>
+  <ul id="newsList"></ul>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     async function loadStock() {
       const symbol = document.getElementById("symbolInput").value.trim();
@@ -38,35 +51,124 @@
           return;
         }
 
-        // 建立資料：範例 "2330\t台積電"
         const firstSuggestion = searchData.suggestions[0];
         const [code, name] = firstSuggestion.split("\t");
 
         document.getElementById("name").textContent = name;
         document.getElementById("code").textContent = code;
 
-        // 再去抓當天股票成交價（以最近交易日當日價格）
+        // 取得最近 20 個交易日的資料繪製圖表
         const today = new Date();
-        const dateStr = today.getFullYear().toString() +
-                        String(today.getMonth() + 1).padStart(2, "0") +
-                        String(today.getDate()).padStart(2, "0");
+        let year = today.getFullYear();
+        let month = today.getMonth() + 1; // 1-12
+        let day = today.getDate();
+        // 日期格式 YYYYMMDD (用今天日期，若無資料會回傳最近交易日)
+        const dateStr = `${year}${month.toString().padStart(2,"0")}${day.toString().padStart(2,"0")}`;
 
+        // 抓最近 20 天股票日成交資訊
         const priceResp = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`);
         const priceData = await priceResp.json();
 
         if (priceData.stat !== "OK" || !priceData.data || priceData.data.length === 0) {
-          document.getElementById("price").textContent = "無法取得價格";
+          alert("無法取得價格資料");
           return;
         }
 
-        // 取得最新成交價：data 最後一筆資料的「成交價」欄位(價格欄位通常是第6個 index)
-        const lastTrade = priceData.data[priceData.data.length -1];
-        const closingPrice = lastTrade[6]; 
+        // 取最近20筆交易資料(如果超過20筆則取前20筆)
+        const last20 = priceData.data.slice(-20);
 
-        document.getElementById("price").textContent = closingPrice;
+        // 畫圖用日期與收盤價
+        const labels = last20.map(d => d[0]); // 日期
+        const closePrices = last20.map(d => parseFloat(d[6].replace(/,/g, ''))); // 收盤價
+        const volumes = last20.map(d => parseInt(d[1].replace(/,/g, ''), 10)); // 成交量
+
+        // 更新昨日收盤價（最後第二筆）
+        const yesterdayClose = closePrices.length >= 2 ? closePrices[closePrices.length - 2] : closePrices[closePrices.length - 1];
+        document.getElementById("yesterdayClose").textContent = yesterdayClose;
+
+        // 今日最新成交價（最後一筆）
+        const latestPrice = closePrices[closePrices.length - 1];
+        document.getElementById("price").textContent = latestPrice;
+
+        // 漲跌金額、百分比
+        const changeAmount = (latestPrice - yesterdayClose).toFixed(2);
+        const changePercent = ((changeAmount / yesterdayClose) * 100).toFixed(2);
+        const changeText = `${changeAmount} (${changePercent}%)`;
+        const changeSpan = document.getElementById("change");
+        changeSpan.textContent = changeText;
+        changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "black");
+
+        // 最新成交量（最後一筆）
+        const latestVolume = volumes[volumes.length - 1];
+        document.getElementById("volume").textContent = latestVolume.toLocaleString();
+
+        // 畫收盤價走勢圖
+        if(window.myChart) window.myChart.destroy();  // 移除舊圖
+
+        const ctx = document.getElementById('chart').getContext('2d');
+        window.myChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: '收盤價',
+              data: closePrices,
+              borderColor: 'blue',
+              backgroundColor: 'rgba(0,0,255,0.1)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            scales: {
+              y: { beginAtZero: false }
+            }
+          }
+        });
+
+        // 抓最新相關新聞（使用 Yahoo 財經 RSS）
+        loadNews(name);
 
       } catch (error) {
         alert("發生錯誤，請稍後再試");
+        console.error(error);
+      }
+    }
+
+    async function loadNews(stockName) {
+      const newsList = document.getElementById("newsList");
+      newsList.innerHTML = "<li>載入中...</li>";
+
+      try {
+        // Yahoo 財經 RSS 範例：使用 Google News 的 RSS 查股票相關新聞（不保證每次都有效）
+        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(stockName + " 股票")}&hl=zh-TW&gl=TW&ceid=TW:zh-Hant`;
+
+        const rssResponse = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(rssUrl)}`);
+        const rssData = await rssResponse.json();
+
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(rssData.contents, "text/xml");
+
+        const items = xmlDoc.querySelectorAll("item");
+        newsList.innerHTML = "";
+
+        if(items.length === 0) {
+          newsList.innerHTML = "<li>找不到相關新聞</li>";
+          return;
+        }
+
+        for(let i = 0; i < Math.min(5, items.length); i++) {
+          const item = items[i];
+          const title = item.querySelector("title").textContent;
+          const link = item.querySelector("link").textContent;
+          const pubDate = item.querySelector("pubDate").textContent;
+
+          const li = document.createElement("li");
+          li.innerHTML = `<a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a> <br><small>${pubDate}</small>`;
+          newsList.appendChild(li);
+        }
+      } catch (error) {
+        newsList.innerHTML = "<li>新聞載入失敗</li>";
         console.error(error);
       }
     }
