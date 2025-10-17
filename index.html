@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>🐷 豬豬內網 全新版</title>
   <style>
-    /* Reset & 基本 */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0; padding: 20px;
@@ -111,7 +110,6 @@
     <div class="announcement">📢 記帳區上線啦！請媽媽和妹妹給我一百萬</div>
   </div>
 
-  <!-- 每日記帳 -->
   <section class="container">
     <h2>📊 每日記帳</h2>
 
@@ -169,7 +167,6 @@
     </div>
   </section>
 
-  <!-- 股票查詢 -->
   <section class="container">
     <h2>📈 股票查詢</h2>
     <div class="flex-row">
@@ -195,18 +192,15 @@
 </div>
 
   <script>
-    // === 使用者登入後初始化 ===
-    let userRef = null; // 目前登入使用者的資料庫路徑
+    let userRef = null; 
 
     function initForUser(user){
-      // 為登入者指定資料庫路徑
       userRef = db.ref(`users/${user}/records`);
-      document.getElementById('roleSelect').value = user; // ✅ 自動顯示登入者名稱
+      document.getElementById('roleSelect').value = user; 
       loadRecentRecords();
       updateStats();
     }
 
-    // Firebase 初始化
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -234,19 +228,16 @@ function login(){
     localStorage.setItem('currentUser', user);
     alert(`歡迎回來，${user}!`);
     document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block'; // ✅ 顯示主畫面
+    document.getElementById('mainContent').style.display = 'block'; 
     initForUser(user);
   } else {
     alert("密碼錯誤！");
   }
 }
     function logout() {
-      // 清除登入紀錄
       localStorage.removeItem('currentUser');
-      // 隱藏主畫面、回到登入頁
       document.getElementById('mainContent').style.display = 'none';
       document.getElementById('loginSection').style.display = 'block';
-      // 可選：清空畫面內容，避免殘留資料
       recordList.innerHTML = '<li>暫無記錄</li>';
       periodResult.textContent = '請選擇日期並點擊查詢';
       todayTotalEl.textContent = '0';
@@ -259,7 +250,6 @@ function login(){
     }
 
 
-    // 主題切換
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
       document.body.classList.add(`theme-${mode}`);
@@ -269,7 +259,6 @@ function login(){
 
     const favRef = db.ref('favorites/stockList');
 
-    // 記帳
     function addRecord(){
       const role = roleSelect.value;
       const category = categorySelect.value;
@@ -336,7 +325,6 @@ function login(){
       periodResult.textContent=`期間內總支出：${total.toFixed(2)} 元 (${start} ~ ${end})`;
     }
 
-    // 自選股
     function loadFavorites(){
       favRef.once('value',snap=>{
         const favs=snap.val()||{},list=favoriteList;
@@ -420,7 +408,6 @@ function login(){
         initForUser(currentUser);
       }
 
-      // ✅ 把這些都放在 window.onload 裡
       window.roleSelect = document.getElementById('roleSelect');
       window.categorySelect = document.getElementById('categorySelect');
       window.amountInput = document.getElementById('amountInput');
@@ -438,7 +425,7 @@ function login(){
       loadFavorites();
 
       console.log("✅ Firebase initialized and elements bound");
-    }; // ✅ 最後只留一個大括號
+    }; 
 
   </script>
 </body>
