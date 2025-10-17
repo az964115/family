@@ -2,35 +2,54 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>豬豬內網</title>
+  <title>🐷 豬豬內網</title>
   <style>
     body {
       font-family: sans-serif;
       padding: 20px;
       max-width: 700px;
       margin: auto;
-      background-color: white;
-      color: black;
+      background-color: #121212;
+      color: #f0f0f0;
       transition: background-color 0.3s, color 0.3s;
     }
     input, button, select, textarea {
       padding: 8px;
       font-size: 16px;
     }
-    #info { margin-top: 20px; }
-    .field { margin-bottom: 12px; }
-    #chart { width: 100%; height: 300px; }
-    .header { text-align: center; margin-bottom: 20px; }
+    #info {
+      margin-top: 20px;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    #chart {
+      width: 100%;
+      height: 300px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
     .announcement {
-      background-color: #f0f0f0;
+      background-color: #2a2a2a;
       padding: 10px;
       border-left: 5px solid orange;
       margin-bottom: 20px;
+      color: #fff6e5;
     }
-    .dark-mode { background-color: #121212; color: #f0f0f0; }
-    .dark-mode .announcement {
-      background-color: #2a2a2a;
-      border-left-color: #ffa500;
+    .dark-mode {
+      background-color: #121212;
+      color: #f0f0f0;
+    }
+    .light-mode {
+      background-color: white;
+      color: black;
+    }
+    .light-mode .announcement {
+      background-color: #f0f0f0;
+      border-left-color: orange;
+      color: black;
     }
     .toggle-button {
       float: right;
@@ -47,13 +66,16 @@
       margin-top: 10px;
       cursor: default;
       width: 250px;
+      color: black;
     }
     #stockQueryList li {
       padding: 6px 10px;
       border-bottom: 1px solid #f9d6a5;
       cursor: pointer;
     }
-    #stockQueryList li:hover { background-color: #ffe0b3; }
+    #stockQueryList li:hover {
+      background-color: #ffe0b3;
+    }
     .search-section {
       display: flex;
       align-items: flex-start;
@@ -61,61 +83,51 @@
       margin-bottom: 20px;
       flex-wrap: wrap;
     }
-    .search-controls { flex-grow: 1; min-width: 200px; }
-    .record-section {
-      margin-top: 40px;
-      padding: 15px;
-      border: 2px solid #f7c873;
-      border-radius: 8px;
-      background: #fff8e7;
+    .search-controls {
+      flex-grow: 1;
+      min-width: 200px;
     }
-    .record-section h3 { margin-top: 0; }
+    .record-section {
+      border: 2px solid orange;
+      padding: 15px;
+      border-radius: 10px;
+      background-color: rgba(255,165,0,0.1);
+      margin-bottom: 25px;
+    }
+    .record-section h3 {
+      margin-top: 0;
+    }
+    #recordList {
+      list-style: none;
+      padding: 0;
+      margin-top: 10px;
+      border: 1px solid #f0b27a;
+      border-radius: 6px;
+      background-color: #fff3e0;
+      color: black;
+    }
+    #recordList li {
+      padding: 6px 10px;
+      border-bottom: 1px solid #f9d6a5;
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
-
-<body>
+<body class="dark-mode">
   <div class="header">
     <h1>🐷 豬豬內網</h1>
-    <button class="toggle-button" onclick="toggleDarkMode()">切換夜間模式</button>
+    <button class="toggle-button" onclick="toggleMode()">切換白色模式</button>
     <h3>🐷 豬豬公告區</h3>
     <div class="announcement">📢 1010烤肉不見不散！</div>
   </div>
 
   <hr />
 
-  <!-- 股票查詢區 -->
-  <div class="search-section">
-    <div class="search-controls">
-      <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
-      <button onclick="loadStock()">查詢</button>
-    </div>
-    <div>
-      <h4>📜 最近股票查詢紀錄</h4>
-      <ul id="stockQueryList">
-        <li>暫無查詢紀錄</li>
-      </ul>
-      <small>點擊紀錄可快速套用股票代碼</small>
-    </div>
-  </div>
-
-  <div id="info">
-    <div class="field"><strong>名稱：</strong><span id="name"></span></div>
-    <div class="field"><strong>代碼：</strong><span id="code"></span></div>
-    <div class="field"><strong>最新成交價：</strong><span id="price"></span></div>
-    <div class="field"><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
-    <div class="field"><strong>漲跌：</strong><span id="change"></span></div>
-    <div class="field"><strong>成交量：</strong><span id="volume"></span></div>
-    <div class="field"><strong>昨日成交量：</strong><span id="yesterdayVolume"></span></div>
-  </div>
-
-  <canvas id="chart"></canvas>
-
-  <!-- 🧾 新增每日記帳功能區 -->
-  <hr />
+  <!-- 每日記帳區 -->
   <div class="record-section">
     <h3>📊 每日記帳</h3>
 
@@ -137,17 +149,57 @@
     <button onclick="addRecord()">記錄</button>
 
     <h4 style="margin-top:20px;">📜 最近記帳紀錄</h4>
-    <ul id="recordList"><li>暫無記錄</li></ul>
+    <ul id="recordList">
+      <li>暫無記錄</li>
+    </ul>
   </div>
 
+  <!-- 股票查詢區 -->
+  <div class="search-section">
+    <div class="search-controls">
+      <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" />
+      <button onclick="loadStock()">查詢</button>
+    </div>
+
+    <div>
+      <h4>📜 最近股票查詢紀錄</h4>
+      <ul id="stockQueryList">
+        <li>暫無查詢紀錄</li>
+      </ul>
+      <small>點擊紀錄可快速套用股票代碼</small>
+    </div>
+  </div>
+
+  <div id="info">
+    <div class="field"><strong>名稱：</strong><span id="name"></span></div>
+    <div class="field"><strong>代碼：</strong><span id="code"></span></div>
+    <div class="field"><strong>最新成交價：</strong><span id="price"></span></div>
+    <div class="field"><strong>昨日收盤：</strong><span id="yesterdayClose"></span></div>
+    <div class="field"><strong>漲跌：</strong><span id="change"></span></div>
+    <div class="field"><strong>成交量：</strong><span id="volume"></span></div>
+    <div class="field"><strong>昨日成交量：</strong><span id="yesterdayVolume"></span></div>
+  </div>
+
+  <canvas id="chart"></canvas>
+
   <script>
-    // --- 原股票功能 ---
-    let isDark = false;
-    function toggleDarkMode() {
+    // 🌙 夜間模式預設開啟
+    let isDark = true;
+    function toggleMode() {
+      const body = document.body;
       isDark = !isDark;
-      document.body.classList.toggle('dark-mode', isDark);
+      if (isDark) {
+        body.classList.remove('light-mode');
+        body.classList.add('dark-mode');
+        document.querySelector('.toggle-button').textContent = '切換白色模式';
+      } else {
+        body.classList.remove('dark-mode');
+        body.classList.add('light-mode');
+        document.querySelector('.toggle-button').textContent = '切換夜間模式';
+      }
     }
 
+    // Firebase 配置
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -161,6 +213,60 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 📊 每日記帳功能
+    let currentRole = 'mom';
+    document.getElementById('roleSelect').addEventListener('change', e => {
+      currentRole = e.target.value;
+      loadRecords();
+    });
+
+    async function addRecord() {
+      const amount = document.getElementById("amountInput").value.trim();
+      const description = document.getElementById("descriptionInput").value.trim();
+
+      if (!amount || !description) {
+        alert("請輸入金額和描述");
+        return;
+      }
+
+      try {
+        const recordRef = db.ref(`records/${currentRole}`).push();
+        const newRecord = {
+          amount: parseFloat(amount),
+          description,
+          timestamp: new Date().toISOString()
+        };
+        await recordRef.set(newRecord);
+        document.getElementById("amountInput").value = "";
+        document.getElementById("descriptionInput").value = "";
+        loadRecords();
+      } catch (error) {
+        alert("記錄失敗，請稍後再試");
+        console.error(error);
+      }
+    }
+
+    function loadRecords() {
+      const recordsRef = db.ref(`records/${currentRole}`).limitToLast(5);
+      recordsRef.off();
+      recordsRef.on('value', snapshot => {
+        const records = snapshot.val();
+        const list = document.getElementById('recordList');
+        list.innerHTML = '';
+        if (!records) {
+          list.innerHTML = '<li>暫無記錄</li>';
+          return;
+        }
+        const sorted = Object.values(records).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        sorted.forEach(record => {
+          const li = document.createElement('li');
+          li.textContent = `💵 金額：${record.amount} ｜ ✏️ 描述：${record.description} ｜ 🕒 ${new Date(record.timestamp).toLocaleString()}`;
+          list.appendChild(li);
+        });
+      });
+    }
+
+    // 📈 股票查詢功能（原功能保留）
     async function addStockQueryRecord(stockCode) {
       const timestamp = new Date().toISOString();
       const newRef = db.ref('stockQueries').push();
@@ -183,7 +289,9 @@
         sortedRecords.forEach(record => {
           const li = document.createElement('li');
           li.textContent = `${record.stockCode} — ${new Date(record.timestamp).toLocaleString()}`;
-          li.onclick = () => { document.getElementById('symbolInput').value = record.stockCode; };
+          li.onclick = () => {
+            document.getElementById('symbolInput').value = record.stockCode;
+          };
           list.appendChild(li);
         });
       });
@@ -191,43 +299,61 @@
 
     async function loadStock() {
       const symbol = document.getElementById("symbolInput").value.trim();
-      if (!symbol) { alert("請輸入股票代碼"); return; }
+      if (!symbol) {
+        alert("請輸入股票代碼");
+        return;
+      }
       try {
         const searchResp = await fetch(`https://www.twse.com.tw/zh/api/codeQuery?query=${symbol}`);
         const searchData = await searchResp.json();
+
         if (!searchData.suggestions || searchData.suggestions.length === 0) {
-          alert("查無此股票代碼"); return;
+          alert("查無此股票代碼");
+          return;
         }
+
         const firstSuggestion = searchData.suggestions[0];
         const [code, name] = firstSuggestion.split("\t");
+
         document.getElementById("name").textContent = name;
         document.getElementById("code").textContent = code;
+
         const today = new Date();
         const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+
         const priceResp = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&date=${dateStr}&stockNo=${code}`);
         const priceData = await priceResp.json();
+
         if (priceData.stat !== "OK" || !priceData.data || priceData.data.length === 0) {
-          alert("無法取得價格資料"); return;
+          alert("無法取得價格資料");
+          return;
         }
+
         const last20 = priceData.data.slice(-20);
         const labels = last20.map(d => d[0]);
         const closePrices = last20.map(d => parseFloat(d[6].replace(/,/g, '')));
         const volumes = last20.map(d => parseInt(d[1].replace(/,/g, ''), 10));
+
         const latestPrice = closePrices[closePrices.length - 1];
         const yesterdayClose = closePrices[closePrices.length - 2];
         const latestVolume = volumes[volumes.length - 1];
         const yesterdayVolume = volumes[volumes.length - 2];
+
         document.getElementById("price").textContent = latestPrice;
         document.getElementById("yesterdayClose").textContent = yesterdayClose;
         document.getElementById("volume").textContent = latestVolume.toLocaleString();
         document.getElementById("yesterdayVolume").textContent = yesterdayVolume.toLocaleString();
+
         const changeAmount = (latestPrice - yesterdayClose).toFixed(2);
         const changePercent = ((changeAmount / yesterdayClose) * 100).toFixed(2);
         const changeText = `${changeAmount} (${changePercent}%)`;
+
         const changeSpan = document.getElementById("change");
         changeSpan.textContent = changeText;
         changeSpan.style.color = changeAmount > 0 ? "red" : (changeAmount < 0 ? "green" : "gray");
+
         if (window.myChart) window.myChart.destroy();
+
         const ctx = document.getElementById('chart').getContext('2d');
         window.myChart = new Chart(ctx, {
           type: 'line',
@@ -242,8 +368,11 @@
               tension: 0.3
             }]
           },
-          options: { scales: { y: { beginAtZero: false } } }
+          options: {
+            scales: { y: { beginAtZero: false } }
+          }
         });
+
         await addStockQueryRecord(symbol);
       } catch (error) {
         alert("錯誤發生，請稍後再試");
@@ -251,53 +380,10 @@
       }
     }
 
-    window.onload = () => { loadStockQueryRecords(); };
-
-    // --- 新增記帳功能 ---
-    let currentRole = 'mom';
-    document.getElementById('roleSelect').addEventListener('change', (e) => {
-      currentRole = e.target.value;
+    window.onload = () => {
       loadRecords();
-    });
-
-    async function addRecord() {
-      const amount = document.getElementById("amountInput").value.trim();
-      const description = document.getElementById("descriptionInput").value.trim();
-      if (!amount || !description) { alert("請輸入金額和描述"); return; }
-      try {
-        const recordRef = db.ref(`records/${currentRole}`).push();
-        await recordRef.set({
-          amount: parseFloat(amount),
-          description,
-          timestamp: new Date().toISOString()
-        });
-        document.getElementById("amountInput").value = "";
-        document.getElementById("descriptionInput").value = "";
-        loadRecords();
-      } catch (error) {
-        alert("記錄失敗，請稍後再試");
-        console.error(error);
-      }
-    }
-
-    function loadRecords() {
-      const recordsRef = db.ref(`records/${currentRole}`).limitToLast(5);
-      recordsRef.off();
-      recordsRef.on('value', snapshot => {
-        const records = snapshot.val();
-        const list = document.getElementById('recordList');
-        list.innerHTML = '';
-        if (!records) { list.innerHTML = '<li>暫無記錄</li>'; return; }
-        const sorted = Object.values(records).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        sorted.forEach(record => {
-          const li = document.createElement('li');
-          li.textContent = `💵 金額：${record.amount} ｜ ✏️ 描述：${record.description} ｜ 🕒 時間：${new Date(record.timestamp).toLocaleString()}`;
-          list.appendChild(li);
-        });
-      });
-    }
-
-    window.addEventListener('load', loadRecords);
+      loadStockQueryRecords();
+    };
   </script>
 </body>
 </html>
