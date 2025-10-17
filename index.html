@@ -13,259 +13,81 @@
       color: #333;
       transition: background-color 0.4s, color 0.4s;
     }
-    h1,h2,h3,h4 {
-      margin-top: 0;
-    }
+    h1,h2,h3,h4 { margin-top: 0; }
     button {
-      cursor: pointer;
-      padding: 8px 14px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: none;
-      background-color: #f0a500;
-      color: #fff;
+      cursor: pointer; padding: 8px 14px; font-size: 16px;
+      border-radius: 5px; border: none;
+      background-color: #f0a500; color: #fff;
       box-shadow: 0 3px 6px rgb(0 0 0 / 0.15);
       transition: background-color 0.3s;
     }
-    button:hover {
-      background-color: #d88e00;
-    }
+    button:hover { background-color: #d88e00; }
     input, select, textarea {
-      padding: 8px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      width: 100%;
-      box-sizing: border-box;
+      padding: 8px; font-size: 16px;
+      border: 1px solid #ccc; border-radius: 5px;
+      width: 100%; box-sizing: border-box;
       transition: border-color 0.3s;
     }
-    input:focus, select:focus, textarea:focus {
-      border-color: #f0a500;
-      outline: none;
-    }
-    textarea {
-      resize: vertical;
-    }
+    input:focus, select:focus, textarea:focus { border-color: #f0a500; outline: none; }
+    textarea { resize: vertical; }
     ul {
-      padding-left: 15px;
-      list-style: none;
-      margin: 8px 0;
-      max-height: 160px;
-      overflow-y: auto;
-      border-radius: 6px;
-      box-shadow: inset 0 0 5px #ccc;
-      background: #fff;
+      padding-left: 15px; list-style: none; margin: 8px 0;
+      max-height: 160px; overflow-y: auto;
+      border-radius: 6px; box-shadow: inset 0 0 5px #ccc; background: #fff;
     }
     ul li {
-      padding: 8px 12px;
-      border-bottom: 1px solid #eee;
-      cursor: pointer;
-      transition: background-color 0.2s;
+      padding: 8px 12px; border-bottom: 1px solid #eee;
+      cursor: pointer; transition: background-color 0.2s;
     }
-    ul li:hover {
-      background-color: #ffe8a3;
-    }
+    ul li:hover { background-color: #ffe8a3; }
     .container {
-      background: #fff3e0;
-      border-radius: 10px;
-      padding: 20px;
-      margin-bottom: 25px;
-      box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
+      background: #fff3e0; border-radius: 10px; padding: 20px;
+      margin-bottom: 25px; box-shadow: 0 4px 8px rgb(0 0 0 / 0.1);
     }
-    .header {
-      text-align: center;
-      margin-bottom: 20px;
-    }
+    .header { text-align: center; margin-bottom: 20px; }
     .announcement {
-      background-color: #fff8dc;
-      border-left: 5px solid #f0a500;
-      padding: 12px 15px;
-      font-weight: bold;
-      font-size: 1.1em;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+      background-color: #fff8dc; border-left: 5px solid #f0a500;
+      padding: 12px 15px; font-weight: bold; font-size: 1.1em;
+      border-radius: 6px; box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
     }
-    .flex-row {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-    }
-    .flex-grow {
-      flex-grow: 1;
-      min-width: 250px;
-    }
-    label {
-      font-weight: 600;
-      display: block;
-      margin-bottom: 6px;
-    }
-    .small-text {
-      font-size: 0.85em;
-      color: #666;
-    }
+    .flex-row { display: flex; gap: 20px; flex-wrap: wrap; }
+    .flex-grow { flex-grow: 1; min-width: 250px; }
+    label { font-weight: 600; display: block; margin-bottom: 6px; }
+    .small-note { font-size: 0.85em; color: #666; }
     .stat-box {
-      background: #fff7cc;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-      box-shadow: inset 0 0 6px #f0a500aa;
+      background: #fff7cc; padding: 12px; border-radius: 8px;
+      margin-top: 10px; box-shadow: inset 0 0 6px #f0a500aa;
       font-weight: 600;
     }
     /* 主題切換 */
-    body.theme-day {
-      background-color: #fdf6e3;
-      color: #333;
-    }
-    body.theme-day .container {
-      background: #fff3e0;
-      color: #333;
-    }
-    body.theme-day .announcement {
-      background-color: #fff8dc;
-      border-left-color: #f0a500;
-      color: #444;
-    }
-    body.theme-day button {
-      background-color: #f0a500;
-      color: #fff;
-      box-shadow: 0 3px 6px rgb(0 0 0 / 0.15);
-    }
-    body.theme-day button:hover {
-      background-color: #d88e00;
-    }
-
-    body.theme-night {
-      background-color: #121212;
-      color: #eee;
-    }
-    body.theme-night .container {
-      background: #222;
-      color: #eee;
-    }
-    body.theme-night .announcement {
-      background-color: #2a2a2a;
-      border-left-color: #ffa500;
-      color: #eee;
-    }
-    body.theme-night button {
-      background-color: #ffa500;
-      color: #222;
-      box-shadow: 0 3px 6px rgb(255 165 0 / 0.6);
-    }
-    body.theme-night button:hover {
-      background-color: #e69500;
-    }
-    body.theme-night input, body.theme-night select, body.theme-night textarea {
-      background: #333;
-      border-color: #555;
-      color: #eee;
-    }
-    body.theme-night input:focus, body.theme-night select:focus, body.theme-night textarea:focus {
-      border-color: #ffa500;
-      outline: none;
-    }
-    body.theme-night ul {
-      background: #1a1a1a;
-      box-shadow: inset 0 0 5px #ffa500aa;
-      color: #eee;
-    }
-    body.theme-night ul li {
-      border-bottom: 1px solid #444;
-      color: #eee;
-    }
-    body.theme-night ul li:hover {
-      background-color: #4a2e00;
-    }
-
-    body.theme-forest {
-      background-color: #1e2f1e;
-      color: #e8f5e9;
-    }
-    body.theme-forest .container {
-      background: #2e4d2e;
-      color: #e8f5e9;
-    }
-    body.theme-forest .announcement {
-      background-color: #3a6e3a;
-      border-left-color: #aed581;
-      color: #dcedc8;
-    }
-    body.theme-forest button {
-      background-color: #aed581;
-      color: #2e4d2e;
-      box-shadow: 0 3px 6px rgb(174 213 129 / 0.6);
-    }
-    body.theme-forest button:hover {
-      background-color: #9ccc65;
-    }
-    body.theme-forest input, body.theme-forest select, body.theme-forest textarea {
-      background: #486b48;
-      border-color: #aed581;
-      color: #e8f5e9;
-    }
-    body.theme-forest input:focus, body.theme-forest select:focus, body.theme-forest textarea:focus {
-      border-color: #dcedc8;
-      outline: none;
-    }
-    body.theme-forest ul {
-      background: #3a6e3a;
-      box-shadow: inset 0 0 5px #aed581cc;
-      color: #dcedc8;
-    }
-    body.theme-forest ul li {
-      border-bottom: 1px solid #598559;
-      color: #dcedc8;
-    }
-    body.theme-forest ul li:hover {
-      background-color: #6fa46f;
-    }
-
-    /* 其他 */
-    #chart {
-      max-width: 100%;
-      height: 300px;
-      margin-top: 15px;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgb(0 0 255 / 0.15);
-      background-color: white;
-    }
-    .top-right {
-      position: fixed;
-      top: 15px;
-      right: 15px;
-      display: flex;
-      gap: 8px;
-      z-index: 999;
-    }
-    .top-right button {
-      padding: 6px 12px;
-      font-size: 14px;
-      background-color: #f0a500;
-      border-radius: 20px;
-      box-shadow: 0 2px 5px rgb(0 0 0 / 0.15);
-    }
-    .top-right button:hover {
-      background-color: #d88e00;
-    }
-    .small-note {
-      font-size: 0.85em;
-      color: #777;
-    }
+    body.theme-day { background-color: #fdf6e3; color: #333; }
+    body.theme-day .container { background: #fff3e0; color: #333; }
+    body.theme-day .announcement { background-color: #fff8dc; border-left-color: #f0a500; color: #444; }
+    body.theme-night { background-color: #121212; color: #eee; }
+    body.theme-night .container { background: #222; color: #eee; }
+    body.theme-night .announcement { background-color: #2a2a2a; border-left-color: #ffa500; color: #eee; }
+    body.theme-night button { background-color: #ffa500; color: #222; box-shadow: 0 3px 6px rgb(255 165 0 / 0.6); }
+    body.theme-night input, body.theme-night select, body.theme-night textarea { background: #333; border-color: #555; color: #eee; }
+    body.theme-night ul { background: #1a1a1a; box-shadow: inset 0 0 5px #ffa500aa; color: #eee; }
+    body.theme-forest { background-color: #1e2f1e; color: #e8f5e9; }
+    body.theme-forest .container { background: #2e4d2e; color: #e8f5e9; }
+    body.theme-forest .announcement { background-color: #3a6e3a; border-left-color: #aed581; color: #dcedc8; }
+    body.theme-forest button { background-color: #aed581; color: #2e4d2e; }
+    body.theme-forest input, body.theme-forest select, body.theme-forest textarea { background: #486b48; border-color: #aed581; color: #e8f5e9; }
+    #chart { max-width: 100%; height: 300px; margin-top: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgb(0 0 255 / 0.15); background-color: white; }
+    .top-right { position: fixed; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 999; }
+    .small-note { font-size: 0.85em; color: #777; }
   </style>
 
-  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
 </head>
 <body>
-
-  <div class="top-right" aria-label="主題切換">
-    <button onclick="setTheme('day')" aria-label="白天模式">🌞 白天</button>
-    <button onclick="setTheme('night')" aria-label="夜間模式">🌙 夜間</button>
-    <button onclick="setTheme('forest')" aria-label="森林綠模式">🌿 森林</button>
+  <div class="top-right">
+    <button onclick="setTheme('day')">🌞 白天</button>
+    <button onclick="setTheme('night')">🌙 夜間</button>
+    <button onclick="setTheme('forest')">🌿 森林</button>
   </div>
 
   <div class="header">
@@ -273,23 +95,22 @@
     <div class="announcement">📢 記帳區上限啦！</div>
   </div>
 
-  <!-- 記帳區塊 -->
-  <section class="container" aria-label="每日記帳">
+  <!-- 每日記帳 -->
+  <section class="container">
     <h2>📊 每日記帳</h2>
 
     <div class="flex-row">
       <div class="flex-grow">
-        <label for="roleSelect"><strong>選擇記帳人</strong></label>
-        <select id="roleSelect" aria-describedby="roleSelectHelp">
+        <label>選擇記帳人</label>
+        <select id="roleSelect">
           <option value="mom">媽媽</option>
           <option value="dad">爸爸</option>
           <option value="sister">妹妹</option>
         </select>
-        <small id="roleSelectHelp" class="small-note">全家共用資料庫，角色只做分類用途。</small>
+        <small class="small-note">全家共用資料庫，角色只做分類用途。</small>
       </div>
-
       <div class="flex-grow">
-        <label for="categorySelect"><strong>選擇類別</strong></label>
+        <label>選擇類別</label>
         <select id="categorySelect">
           <option value="食物">🍔 食物</option>
           <option value="交通">🚌 交通</option>
@@ -299,43 +120,32 @@
       </div>
     </div>
 
-    <div class="field">
-      <label for="amountInput"><strong>金額</strong></label>
-      <input type="number" id="amountInput" min="0" step="0.01" placeholder="輸入金額 (例如 100)" />
-    </div>
-    <div class="field">
-      <label for="descriptionInput"><strong>描述</strong></label>
-      <textarea id="descriptionInput" rows="2" placeholder="輸入描述 (例如：午餐、買飲料)"></textarea>
-    </div>
-    <button onclick="addRecord()">記錄支出</button>
+    <label>金額</label>
+    <input type="number" id="amountInput" min="0" step="0.01" placeholder="輸入金額" />
 
-    <hr />
+    <label>描述</label>
+    <textarea id="descriptionInput" rows="2" placeholder="輸入描述"></textarea>
+
+    <button onclick="addRecord()">記錄支出</button>
+    <hr>
 
     <h3>📅 自訂期間查詢</h3>
     <div class="flex-row">
-      <div class="flex-grow">
-        <label for="startDate"><strong>開始日期</strong></label>
-        <input type="date" id="startDate" />
-      </div>
-      <div class="flex-grow">
-        <label for="endDate"><strong>結束日期</strong></label>
-        <input type="date" id="endDate" />
-      </div>
+      <div class="flex-grow"><input type="date" id="startDate" /></div>
+      <div class="flex-grow"><input type="date" id="endDate" /></div>
     </div>
     <button onclick="queryPeriodExpenses()">查詢期間支出</button>
-    <div id="periodResult" class="stat-box" aria-live="polite" style="margin-top:10px;">請選擇日期並點擊查詢</div>
+    <div id="periodResult" class="stat-box">請選擇日期並點擊查詢</div>
 
-    <hr />
+    <hr>
 
     <h3>📜 最近記帳紀錄</h3>
-    <ul id="recordList" aria-live="polite">
-      <li>暫無記錄</li>
-    </ul>
+    <ul id="recordList"><li>暫無記錄</li></ul>
 
-    <hr />
+    <hr>
 
     <h3>📈 支出統計</h3>
-    <div id="statsBox" class="stat-box" aria-live="polite">
+    <div id="statsBox" class="stat-box">
       <p>今日總支出：<span id="todayTotal">0</span> 元</p>
       <p>最近 7 天平均每日支出：<span id="avg7Days">0</span> 元</p>
       <p>最近 30 天平均每日支出：<span id="avg30Days">0</span> 元</p>
@@ -343,34 +153,22 @@
       <p id="warningMsg" style="color:#c0392b; font-weight:bold;"></p>
       <p>預測下週支出：約 <span id="forecastWeek">0</span> 元</p>
     </div>
-
-    <hr />
-
-    <h3>💡 今日理財小語</h3>
-    <div id="dailyTip" class="announcement" aria-live="polite">
-      載入中...
-    </div>
   </section>
 
-  <!-- 股票查詢區 -->
-  <section class="container" aria-label="股票查詢">
+  <!-- 股票查詢 -->
+  <section class="container">
     <h2>📈 股票查詢</h2>
-
     <div class="flex-row">
-      <div class="flex-grow">
-        <input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" aria-label="股票代碼" />
-      </div>
+      <div class="flex-grow"><input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" /></div>
       <button onclick="loadStock()">查詢</button>
     </div>
 
-    <div class="flex-row" style="margin-top:10px; gap: 40px;">
+    <div class="flex-row" style="margin-top:10px; gap:40px;">
       <div class="flex-grow">
         <h4>⭐ 自選股清單</h4>
-        <ul id="favoriteList" aria-live="polite">
-          <!-- 由 JS 動態產生 -->
-        </ul>
+        <ul id="favoriteList"></ul>
         <div style="margin-top:10px;">
-          <input type="text" id="newFavorite" placeholder="新增股票代碼" aria-label="新增股票代碼" />
+          <input type="text" id="newFavorite" placeholder="新增股票代碼" />
           <button onclick="addFavorite()">新增自選股</button>
         </div>
       </div>
@@ -384,7 +182,7 @@
   <script>
     // Firebase 初始化
     const firebaseConfig = {
-      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",  // 你原本的 API KEY
+      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
       databaseURL: "https://piggynet-93c33-default-rtdb.firebaseio.com",
       projectId: "piggynet-93c33",
@@ -395,278 +193,123 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 預設主題
-    function setTheme(mode) {
-      document.body.classList.remove('theme-day', 'theme-night', 'theme-forest');
-      if(mode === 'day') document.body.classList.add('theme-day');
-      else if(mode === 'night') document.body.classList.add('theme-night');
-      else if(mode === 'forest') document.body.classList.add('theme-forest');
+    // 主題切換
+    function setTheme(mode){
+      document.body.classList.remove('theme-day','theme-night','theme-forest');
+      document.body.classList.add(`theme-${mode}`);
       localStorage.setItem('themeMode', mode);
     }
-    // 載入主題
-    const savedTheme = localStorage.getItem('themeMode') || 'day';
-    setTheme(savedTheme);
+    setTheme(localStorage.getItem('themeMode') || 'day');
 
-    // 記帳資料讀取/寫入
     const recordsRef = db.ref('records');
-
-    // 自選股清單（全家共用）
     const favRef = db.ref('favorites/stockList');
 
-    // 讀取自選股清單並更新UI
-    function loadFavorites() {
-      favRef.once('value', snapshot => {
-        const favs = snapshot.val() || {};
-        const listEl = document.getElementById('favoriteList');
-        listEl.innerHTML = '';
-        const codes = Object.keys(favs);
-        if(codes.length === 0){
-          // 預設兩隻
-          favRef.update({'2330':true, '0050':true});
-          return loadFavorites();
-        }
-        codes.forEach(code => {
-          const li = document.createElement('li');
-          li.textContent = code;
-          li.tabIndex = 0;
-          li.title = `點擊查詢股票 ${code}`;
-          li.addEventListener('click', () => {
-            document.getElementById('symbolInput').value = code;
-            loadStock();
-          });
-          listEl.appendChild(li);
-        });
-      });
-    }
-
-    function addFavorite() {
-      const input = document.getElementById('newFavorite');
-      let code = input.value.trim().toUpperCase();
-      if(!code.match(/^\d+$/)) {
-        alert('請輸入有效的股票代碼(純數字)');
-        return;
-      }
-      favRef.update({[code]: true});
-      input.value = '';
-      loadFavorites();
-    }
-
-    loadFavorites();
-
-    // 新增記帳紀錄
-    function addRecord() {
-      const role = document.getElementById('roleSelect').value;
-      const category = document.getElementById('categorySelect').value;
-      const amount = parseFloat(document.getElementById('amountInput').value);
-      const desc = document.getElementById('descriptionInput').value.trim();
-      if(isNaN(amount) || amount <= 0){
-        alert('請輸入有效的金額');
-        return;
-      }
+    // 記帳
+    function addRecord(){
+      const role = roleSelect.value;
+      const category = categorySelect.value;
+      const amount = parseFloat(amountInput.value);
+      const desc = descriptionInput.value.trim();
+      if(isNaN(amount)||amount<=0){ alert('請輸入有效金額'); return; }
       const now = new Date();
-      const record = {
-        role,
-        category,
-        amount,
-        description: desc,
-        timestamp: now.getTime(),
-        date: now.toISOString().slice(0,10)
-      };
-      // 存到 Firebase
-      recordsRef.push(record, error => {
-        if(error) alert('儲存失敗');console.error(error);
-        }else {
-          alert('記帳成功！');
-          document.getElementById('amountInput').value = '';
-          document.getElementById('descriptionInput').value = '';
-          loadRecentRecords();
-          updateStats();
-        }
+      const record={role,category,amount,description:desc,timestamp:now.getTime(),date:now.toISOString().slice(0,10)};
+      recordsRef.push(record,err=>{
+        if(err){alert('儲存失敗');console.error(err);}
+        else{alert('記帳成功');amountInput.value='';descriptionInput.value='';loadRecentRecords();updateStats();}
       });
     }
 
-    // 顯示最近記帳紀錄
-    function loadRecentRecords() {
-      recordsRef.orderByChild('timestamp').limitToLast(20).once('value', snapshot => {
-        const records = snapshot.val();
-        const listEl = document.getElementById('recordList');
-        listEl.innerHTML = '';
-        if(!records) {
-          listEl.innerHTML = '<li>暫無記錄</li>';
-          return;
-        }
-        // 轉成陣列且由新到舊
-        const arr = Object.values(records).sort((a,b)=>b.timestamp - a.timestamp);
-        arr.forEach(rec => {
-          const li = document.createElement('li');
-          li.textContent = `${rec.date} - ${rec.role} - ${rec.category} - ${rec.amount} 元 - ${rec.description}`;
-          listEl.appendChild(li);
+    function loadRecentRecords(){
+      recordsRef.orderByChild('timestamp').limitToLast(20).once('value',snap=>{
+        const records=snap.val(),list=recordList;
+        list.innerHTML='';
+        if(!records){list.innerHTML='<li>暫無記錄</li>';return;}
+        Object.values(records).sort((a,b)=>b.timestamp-a.timestamp).forEach(r=>{
+          const li=document.createElement('li');
+          li.textContent=`${r.date} - ${r.role} - ${r.category} - ${r.amount} 元 - ${r.description}`;
+          list.appendChild(li);
         });
       });
     }
 
-    // 支出統計計算
-    async function updateStats() {
-      const snapshot = await recordsRef.once('value');
-      const records = snapshot.val();
-      if(!records){
-        updateStatsUI([]);
-        return;
-      }
-      const arr = Object.values(records);
-      updateStatsUI(arr);
+    async function updateStats(){
+      const snap=await recordsRef.once('value');
+      const arr=Object.values(snap.val()||[]);
+      const today=new Date().toISOString().slice(0,10);
+      const now=Date.now(),day=86400000;
+      const todayTotal=arr.filter(r=>r.date===today).reduce((s,r)=>s+r.amount,0);
+      const arr7=arr.filter(r=>now-r.timestamp<7*day),arr30=arr.filter(r=>now-r.timestamp<30*day);
+      const avg7=(arr7.reduce((s,r)=>s+r.amount,0)/7).toFixed(2);
+      const avg30=(arr30.reduce((s,r)=>s+r.amount,0)/30).toFixed(2);
+      const month=today.slice(0,7);
+      const monthTotal=arr.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s+r.amount,0);
+      warningMsg.textContent=todayTotal>avg7*2?"⚠️ 今日花太多啦！":"";
+      todayTotalEl.textContent=todayTotal.toFixed(2);
+      avg7Days.textContent=avg7;
+      avg30Days.textContent=avg30;
+      monthTotalEl.textContent=monthTotal.toFixed(2);
+      forecastWeek.textContent=(avg7*7).toFixed(2);
     }
 
-    // 計算並更新統計數據 UI
-    function updateStatsUI(records) {
-      const today = new Date().toISOString().slice(0,10);
-      const todayRecords = records.filter(r => r.date === today);
-      const todayTotal = todayRecords.reduce((sum, r)=> sum + r.amount, 0);
-
-      // 近7天、30天
-      const nowTime = Date.now();
-      const dayMS = 24*60*60*1000;
-      const arr7days = records.filter(r => nowTime - r.timestamp < 7*dayMS);
-      const arr30days = records.filter(r => nowTime - r.timestamp < 30*dayMS);
-
-      const sum7 = arr7days.reduce((s,r)=> s+r.amount,0);
-      const sum30 = arr30days.reduce((s,r)=> s+r.amount,0);
-      const avg7 = (sum7 / 7).toFixed(2);
-      const avg30 = (sum30 / 30).toFixed(2);
-
-      // 當月累計
-      const yearMonth = today.slice(0,7);
-      const monthRecords = records.filter(r => r.date.startsWith(yearMonth));
-      const monthTotal = monthRecords.reduce((s,r)=> s+r.amount,0);
-
-      // 警告訊息
-      const warningMsgEl = document.getElementById('warningMsg');
-      if(todayTotal > avg7 * 2){
-        warningMsgEl.textContent = "⚠️ 今日花太多啦！";
-      } else {
-        warningMsgEl.textContent = "";
-      }
-
-      // 預測下週支出 (7日均*7)
-      const forecastWeek = (avg7 * 7).toFixed(2);
-
-      document.getElementById('todayTotal').textContent = todayTotal.toFixed(2);
-      document.getElementById('avg7Days').textContent = avg7;
-      document.getElementById('avg30Days').textContent = avg30;
-      document.getElementById('monthTotal').textContent = monthTotal.toFixed(2);
-      document.getElementById('forecastWeek').textContent = forecastWeek;
+    async function queryPeriodExpenses(){
+      const start=startDate.value,end=endDate.value;
+      if(!start||!end){alert('請輸入完整日期');return;}
+      if(start>end){alert('開始日期不能晚於結束日期');return;}
+      const snap=await recordsRef.once('value');
+      const arr=Object.values(snap.val()||[]);
+      const total=arr.filter(r=>r.date>=start&&r.date<=end).reduce((s,r)=>s+r.amount,0);
+      periodResult.textContent=`期間內總支出：${total.toFixed(2)} 元 (${start} ~ ${end})`;
     }
 
-    // 期間查詢總支出
-    async function queryPeriodExpenses() {
-      const start = document.getElementById('startDate').value;
-      const end = document.getElementById('endDate').value;
-      if(!start || !end){
-        alert('請輸入完整的開始及結束日期');
-        return;
-      }
-      if(start > end){
-        alert('開始日期不能晚於結束日期');
-        return;
-      }
-      const snapshot = await recordsRef.once('value');
-      const records = snapshot.val();
-      if(!records){
-        document.getElementById('periodResult').textContent = "無支出紀錄";
-        return;
-      }
-      const arr = Object.values(records);
-      const filtered = arr.filter(r => r.date >= start && r.date <= end);
-      const total = filtered.reduce((sum, r) => sum + r.amount, 0);
-      document.getElementById('periodResult').textContent = `期間內總支出：${total.toFixed(2)} 元 (${start} ~ ${end})`;
+    // 自選股
+    function loadFavorites(){
+      favRef.once('value',snap=>{
+        const favs=snap.val()||{},list=favoriteList;
+        list.innerHTML='';
+        const codes=Object.keys(favs);
+        if(codes.length===0){favRef.update({'2330':true,'0050':true});return loadFavorites();}
+        codes.forEach(code=>{
+          const li=document.createElement('li');
+          li.textContent=code;
+          li.addEventListener('click',()=>{symbolInput.value=code;loadStock();});
+          list.appendChild(li);
+        });
+      });
     }
 
-    // 每日理財小語，每日根據日期變換
-    const dailyTips = [
-      "今日花費要適度，理財從小事做起。",
-      "記帳幫助你掌握消費狀況。",
-      "投資前先做好風險評估。",
-      "定期檢視自己的支出計劃。",
-      "把握複利，時間是最好的朋友。",
-      "記得多存一點，備用金很重要。",
-      "設立目標，讓理財更有方向。",
-      "避免衝動消費，理智購物。",
-      "多學習理財知識，財富增值。",
-      "保持收支平衡，生活無壓力。"
-    ];
-    function updateDailyTip(){
-      const dayIndex = new Date().getDate() % dailyTips.length;
-      document.getElementById('dailyTip').textContent = dailyTips[dayIndex];
+    function addFavorite(){
+      const code=newFavorite.value.trim();
+      if(!code.match(/^\d+$/)){alert('請輸入有效代碼');return;}
+      favRef.update({[code]:true});newFavorite.value='';loadFavorites();
     }
 
-    updateDailyTip();
-
-    // 股票查詢與圖表
-    const chartCtx = document.getElementById('chart').getContext('2d');
-    let stockChart = null;
-
+    const chartCtx=document.getElementById('chart').getContext('2d');
+    let stockChart=null;
     async function loadStock(){
-      const symbol = document.getElementById('symbolInput').value.trim();
-      if(!symbol.match(/^\d+$/)) {
-        alert('請輸入有效的股票代碼（純數字）');
-        return;
-      }
-      // 使用台灣證交所 API 或其他免費API，這裡以 Finnhub 替代示範（需申請API KEY，請自行替換）
-      const token = "你的_finnhub_API_KEY";
-      try {
-        // 取得近30日收盤價
-        const now = Math.floor(Date.now()/1000);
-        const from = now - 86400*30;
-        const res = await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TWS:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
-        const data = await res.json();
-        if(data.s !== "ok"){
-          alert('無法取得股票資料');
-          return;
-        }
-        const labels = data.t.map(ts => new Date(ts*1000).toISOString().slice(5,10));
-        const prices = data.c;
-
-        if(stockChart) stockChart.destroy();
-
-        stockChart = new Chart(chartCtx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: `${symbol} 收盤價`,
-              data: prices,
-              borderColor: 'rgba(240,165,0,0.9)',
-              backgroundColor: 'rgba(240,165,0,0.2)',
-              fill: true,
-              tension: 0.3,
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: {
-                labels: { color: getComputedStyle(document.body).color }
-              }
-            },
-            scales: {
-              x: { ticks: { color: getComputedStyle(document.body).color } },
-              y: { ticks: { color: getComputedStyle(document.body).color } }
-            }
-          }
-        });
-      } catch(e) {
-        alert('股票資料載入錯誤');
-        console.error(e);
-      }
+      const symbol=symbolInput.value.trim();
+      if(!symbol.match(/^\d+$/)){alert('請輸入有效代碼');return;}
+      const token="你的_finnhub_API_KEY";
+      const now=Math.floor(Date.now()/1000),from=now-86400*30;
+      try{
+        const res=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TWS:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
+        const data=await res.json();
+        if(data.s!=="ok"){alert('無法取得股票資料');return;}
+        const labels=data.t.map(ts=>new Date(ts*1000).toISOString().slice(5,10));
+        const prices=data.c;
+        if(stockChart)stockChart.destroy();
+        stockChart=new Chart(chartCtx,{type:'line',data:{labels,datasets:[{label:`${symbol} 收盤價`,data:prices,borderColor:'rgba(240,165,0,0.9)',backgroundColor:'rgba(240,165,0,0.2)',fill:true,tension:0.3}]},options:{responsive:true,plugins:{legend:{labels:{color:getComputedStyle(document.body).color}}},scales:{x:{ticks:{color:getComputedStyle(document.body).color}},y:{ticks:{color:getComputedStyle(document.body).color}}}}});
+      }catch(e){console.error(e);alert('股票查詢失敗');}
     }
 
-    // 初始載入最近記帳與統計
-    loadRecentRecords();
-    updateStats();
-
-    // 主動更新每日理財小語
-    setInterval(updateDailyTip, 1000*60*60); // 每小時更新（主要為日切換時更新）
-
+    window.onload=()=>{
+      window.todayTotalEl=document.getElementById('todayTotal');
+      window.avg7Days=document.getElementById('avg7Days');
+      window.avg30Days=document.getElementById('avg30Days');
+      window.monthTotalEl=document.getElementById('monthTotal');
+      window.warningMsg=document.getElementById('warningMsg');
+      window.forecastWeek=document.getElementById('forecastWeek');
+      loadRecentRecords(); updateStats(); loadFavorites();
+    }
   </script>
 </body>
 </html>
