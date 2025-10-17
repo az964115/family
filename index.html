@@ -103,6 +103,7 @@
     <button onclick="setTheme('day')">🌞 白天</button>
     <button onclick="setTheme('night')">🌙 夜間</button>
     <button onclick="setTheme('forest')">🌿 森林</button>
+    <button onclick="logout()">🚪 登出</button>
   </div>
 
   <div class="header">
@@ -239,6 +240,24 @@ function login(){
     alert("密碼錯誤！");
   }
 }
+    function logout() {
+      // 清除登入紀錄
+      localStorage.removeItem('currentUser');
+      // 隱藏主畫面、回到登入頁
+      document.getElementById('mainContent').style.display = 'none';
+      document.getElementById('loginSection').style.display = 'block';
+      // 可選：清空畫面內容，避免殘留資料
+      recordList.innerHTML = '<li>暫無記錄</li>';
+      periodResult.textContent = '請選擇日期並點擊查詢';
+      todayTotalEl.textContent = '0';
+      avg7Days.textContent = '0';
+      avg30Days.textContent = '0';
+      monthTotalEl.textContent = '0';
+      forecastWeek.textContent = '0';
+      warningMsg.textContent = '';
+      alert('您已登出！');
+    }
+
 
     // 主題切換
     function setTheme(mode){
