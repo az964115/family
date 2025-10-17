@@ -98,7 +98,7 @@
   <input type="password" id="loginPassword" placeholder="輸入密碼" />
   <button onclick="login()">登入</button>
 </div>
-
+<div id="mainContent" style="display:none;">
   <div class="top-right">
     <button onclick="setTheme('day')">🌞 白天</button>
     <button onclick="setTheme('night')">🌙 夜間</button>
@@ -117,11 +117,9 @@
     <div class="flex-row">
       <div class="flex-grow">
         <label>選擇記帳人</label>
-        <select id="roleSelect">
-          <option value="mom">媽媽</option>
-          <option value="dad">爸爸</option>
-          <option value="sister">妹妹</option>
-        </select>
+        <input type="text" id="roleSelect" readonly style="background:#eee; font-weight:bold;">
+        <small class="small-note">目前登入的使用者</small>
+
         <small class="small-note">全家共用資料庫，角色只做分類用途。</small>
       </div>
       <div class="flex-grow">
@@ -193,6 +191,7 @@
       </div>
     </div>
   </section>
+</div>
 
   <script>
     // === 使用者登入後初始化 ===
@@ -201,6 +200,7 @@
     function initForUser(user){
       // 為登入者指定資料庫路徑
       userRef = db.ref(`users/${user}/records`);
+      document.getElementById('roleSelect').value = user; // ✅ 自動顯示登入者名稱
       loadRecentRecords();
       updateStats();
     }
@@ -233,7 +233,7 @@ function login(){
     localStorage.setItem('currentUser', user);
     alert(`歡迎回來，${user}!`);
     document.getElementById('loginSection').style.display = 'none';
-    document.body.style.display = 'block';
+    document.getElementById('mainContent').style.display = 'block'; // ✅ 顯示主畫面
     initForUser(user);
   } else {
     alert("密碼錯誤！");
@@ -393,14 +393,15 @@ function login(){
     window.onload=()=>{
       const currentUser = localStorage.getItem('currentUser');
       if (!currentUser) {
-        document.body.style.display = 'none';
+        document.getElementById('mainContent').style.display = 'none';
         document.getElementById('loginSection').style.display = 'block';
-        return;
+      } else {
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        initForUser(currentUser);
       }
-      document.getElementById('loginSection').style.display = 'none';
-      document.body.style.display = 'block';
-      initForUser(currentUser);
-    };
+
+      // ✅ 把這些都放在 window.onload 裡
       window.roleSelect = document.getElementById('roleSelect');
       window.categorySelect = document.getElementById('categorySelect');
       window.amountInput = document.getElementById('amountInput');
@@ -414,10 +415,12 @@ function login(){
       window.monthTotalEl = document.getElementById('monthTotal');
       window.warningMsg = document.getElementById('warningMsg');
       window.forecastWeek = document.getElementById('forecastWeek');
+
       loadFavorites();
 
       console.log("✅ Firebase initialized and elements bound");
-    };
+    }; // ✅ 最後只留一個大括號
+
   </script>
 </body>
 </html>
