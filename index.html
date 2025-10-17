@@ -474,8 +474,8 @@
       };
       // 存到 Firebase
       recordsRef.push(record, error => {
-        if(error) alert('儲存失敗');
-        else {
+        if(error) alert('儲存失敗');console.error(error);
+        }else {
           alert('記帳成功！');
           document.getElementById('amountInput').value = '';
           document.getElementById('descriptionInput').value = '';
