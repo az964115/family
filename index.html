@@ -97,7 +97,7 @@
     .record-section h3 {
       margin-top: 0;
     }
-    #recordList {
+    #recordList, #rangeList {
       list-style: none;
       padding: 0;
       margin-top: 10px;
@@ -106,7 +106,7 @@
       background-color: #fff3e0;
       color: black;
     }
-    #recordList li {
+    #recordList li, #rangeList li {
       padding: 6px 10px;
       border-bottom: 1px solid #f9d6a5;
     }
@@ -152,6 +152,24 @@
     <ul id="recordList">
       <li>暫無記錄</li>
     </ul>
+
+    <hr />
+
+    <!-- 🔍 日期查詢區 -->
+    <h4>📅 查詢日期區間支出</h4>
+    <div class="field">
+      <label>開始日期：</label>
+      <input type="date" id="startDate" />
+      <label>結束日期：</label>
+      <input type="date" id="endDate" />
+      <button onclick="searchByDate()">查詢</button>
+    </div>
+
+    <h4>📆 查詢結果</h4>
+    <ul id="rangeList">
+      <li>尚未查詢</li>
+    </ul>
+    <p><strong>💰 期間總支出：</strong><span id="totalAmount">0</span> 元</p>
   </div>
 
   <!-- 股票查詢區 -->
@@ -260,13 +278,62 @@
         const sorted = Object.values(records).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         sorted.forEach(record => {
           const li = document.createElement('li');
-          li.textContent = `💵 金額：${record.amount} ｜ ✏️ 描述：${record.description} ｜ 🕒 ${new Date(record.timestamp).toLocaleString()}`;
+          li.textContent = `💵 ${record.amount} ｜ ✏️ ${record.description} ｜ 🕒 ${new Date(record.timestamp).toLocaleString()}`;
           list.appendChild(li);
         });
       });
     }
 
-    // 📈 股票查詢功能（原功能保留）
+    // 🔍 日期區間查詢功能
+    async function searchByDate() {
+      const startDate = document.getElementById("startDate").value;
+      const endDate = document.getElementById("endDate").value;
+      const list = document.getElementById("rangeList");
+      const totalEl = document.getElementById("totalAmount");
+
+      if (!startDate || !endDate) {
+        alert("請輸入完整的起訖日期");
+        return;
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23,59,59,999);
+
+      const recordsRef = db.ref(`records/${currentRole}`);
+      const snapshot = await recordsRef.get();
+      const records = snapshot.val();
+      list.innerHTML = '';
+      totalEl.textContent = '0';
+
+      if (!records) {
+        list.innerHTML = '<li>無任何紀錄</li>';
+        return;
+      }
+
+      const filtered = Object.values(records).filter(r => {
+        const time = new Date(r.timestamp);
+        return time >= start && time <= end;
+      });
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<li>這段期間沒有支出紀錄</li>';
+        return;
+      }
+
+      let total = 0;
+      filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      filtered.forEach(r => {
+        const li = document.createElement('li');
+        li.textContent = `💵 ${r.amount} ｜ ✏️ ${r.description} ｜ 🕒 ${new Date(r.timestamp).toLocaleString()}`;
+        list.appendChild(li);
+        total += r.amount;
+      });
+
+      totalEl.textContent = total.toFixed(2);
+    }
+
+    // 📈 股票查詢功能
     async function addStockQueryRecord(stockCode) {
       const timestamp = new Date().toISOString();
       const newRef = db.ref('stockQueries').push();
@@ -368,9 +435,7 @@
               tension: 0.3
             }]
           },
-          options: {
-            scales: { y: { beginAtZero: false } }
-          }
+          options: { scales: { y: { beginAtZero: false } } }
         });
 
         await addStockQueryRecord(symbol);
