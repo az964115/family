@@ -84,6 +84,21 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
+  <div id="loginSection" class="container" style="max-width:400px; margin:auto;">
+  <h2>👤 使用者登入</h2>
+  <label>使用者名稱</label>
+  <select id="loginUser">
+    <option value="mom">媽媽</option>
+    <option value="dad">爸爸</option>
+    <option value="debby">妹妹</option>
+    <option value="xiaoguai">小乖</option>
+  </select>
+
+  <label>密碼</label>
+  <input type="password" id="loginPassword" placeholder="輸入密碼" />
+  <button onclick="login()">登入</button>
+</div>
+
   <div class="top-right">
     <button onclick="setTheme('day')">🌞 白天</button>
     <button onclick="setTheme('night')">🌙 夜間</button>
@@ -180,6 +195,16 @@
   </section>
 
   <script>
+    // === 使用者登入後初始化 ===
+    let userRef = null; // 目前登入使用者的資料庫路徑
+
+    function initForUser(user){
+      // 為登入者指定資料庫路徑
+      userRef = db.ref(`users/${user}/records`);
+      loadRecentRecords();
+      updateStats();
+    }
+
     // Firebase 初始化
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
@@ -193,6 +218,28 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    const USERS = {
+  mom: "mom",
+  dad: "dad",
+  debby: "debby",
+  xiaoguai: "930352"
+};
+
+function login(){
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPassword').value.trim();
+
+  if(pass === USERS[user]){
+    localStorage.setItem('currentUser', user);
+    alert(`歡迎回來，${user}!`);
+    document.getElementById('loginSection').style.display = 'none';
+    document.body.style.display = 'block';
+    initForUser(user);
+  } else {
+    alert("密碼錯誤！");
+  }
+}
+
     // 主題切換
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
@@ -201,7 +248,6 @@
     }
     setTheme(localStorage.getItem('themeMode') || 'day');
 
-    const recordsRef = db.ref('records');
     const favRef = db.ref('favorites/stockList');
 
     // 記帳
@@ -216,14 +262,14 @@
         .toISOString()
         .slice(0, 10);
       const record={role,category,amount,description:desc,timestamp:now.getTime(),date:localDate};
-      recordsRef.push(record,err=>{
+      userRef.push(record,err=>{
         if(err){alert('儲存失敗');console.error(err);}
         else{alert('記帳成功');amountInput.value='';descriptionInput.value='';loadRecentRecords();updateStats();}
       });
     }
 
     function loadRecentRecords(){
-      recordsRef.orderByChild('timestamp').limitToLast(20).once('value',snap=>{
+      userRef.orderByChild('timestamp').limitToLast(20).once('value',snap=>{
         const records=snap.val(),list=recordList;
         list.innerHTML='';
         if(!records){list.innerHTML='<li>暫無記錄</li>';return;}
@@ -236,7 +282,7 @@
     }
 
     async function updateStats(){
-      const snap=await recordsRef.once('value');
+      const snap=await userRef.once('value');
       const arr=Object.values(snap.val()||[]);
       if (arr.length === 0) return;
       
@@ -265,7 +311,7 @@
       const start=startDate.value,end=endDate.value;
       if(!start||!end){alert('請輸入完整日期');return;}
       if(start>end){alert('開始日期不能晚於結束日期');return;}
-      const snap=await recordsRef.once('value');
+      const snap=await userRef.once('value');
       const arr=Object.values(snap.val()||[]);
       const total=arr.filter(r=>r.date>=start&&r.date<=end).reduce((s,r)=>s+r.amount,0);
       periodResult.textContent=`期間內總支出：${total.toFixed(2)} 元 (${start} ~ ${end})`;
@@ -345,6 +391,16 @@
     }
 
     window.onload=()=>{
+      const currentUser = localStorage.getItem('currentUser');
+      if (!currentUser) {
+        document.body.style.display = 'none';
+        document.getElementById('loginSection').style.display = 'block';
+        return;
+      }
+      document.getElementById('loginSection').style.display = 'none';
+      document.body.style.display = 'block';
+      initForUser(currentUser);
+    };
       window.roleSelect = document.getElementById('roleSelect');
       window.categorySelect = document.getElementById('categorySelect');
       window.amountInput = document.getElementById('amountInput');
@@ -358,8 +414,6 @@
       window.monthTotalEl = document.getElementById('monthTotal');
       window.warningMsg = document.getElementById('warningMsg');
       window.forecastWeek = document.getElementById('forecastWeek');
-      loadRecentRecords(); 
-      updateStats(); 
       loadFavorites();
 
       console.log("✅ Firebase initialized and elements bound");
