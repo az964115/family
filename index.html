@@ -298,18 +298,46 @@
     async function loadStock(){
       const symbol=symbolInput.value.trim();
       if(!symbol.match(/^\d+$/)){alert('請輸入有效代碼');return;}
-      const token="d3oq1vhr01quo6o5fuagd3oq1vhr01quo6o5fub0";
-      const now=Math.floor(Date.now()/1000),from=now-86400*30;
       try{
-        const res=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TW:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
-        const data=await res.json();
-        console.log("Finnhub 回傳：", data);
-        if(data.s!=="ok"){alert('無法取得股票資料（可能代碼錯誤或 API 流量用盡）');return;}
-        const labels=data.t.map(ts=>new Date(ts*1000).toISOString().slice(5,10));
-        const prices=data.c;
-        if(stockChart)stockChart.destroy();
-        stockChart=new Chart(chartCtx,{type:'line',data:{labels,datasets:[{label:`${symbol} 收盤價`,data:prices,borderColor:'rgba(240,165,0,0.9)',backgroundColor:'rgba(240,165,0,0.2)',fill:true,tension:0.3}]},options:{responsive:true,plugins:{legend:{labels:{color:getComputedStyle(document.body).color}}},scales:{x:{ticks:{color:getComputedStyle(document.body).color}},y:{ticks:{color:getComputedStyle(document.body).color}}}}});
-      }catch(e){console.error(e);alert('股票查詢失敗');}
+        const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${symbol}`);
+        const data = await res.json();
+        console.log("TWSE 回傳：", data);
+        
+        if (data.stat !== "OK" || !data.data) {
+          alert('查詢失敗（代碼錯誤或暫無資料）');
+          return;
+        }
+        const labels = data.data.map(row => row[0].replace(/\//g, '-')); // 日期
+        const prices = data.data.map(row => parseFloat(row[6])); // 收盤價
+        if (stockChart) stockChart.destroy();
+        stockChart = new Chart(chartCtx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: `${symbol} 收盤價`,
+              data: prices,
+              borderColor: 'rgba(240,165,0,0.9)',
+              backgroundColor: 'rgba(240,165,0,0.2)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { labels: { color: getComputedStyle(document.body).color } }
+            },
+            scales: {
+              x: { ticks: { color: getComputedStyle(document.body).color } },
+              y: { ticks: { color: getComputedStyle(document.body).color } }
+            }
+          }
+        });
+      } catch (e) {
+        console.error(e);
+        alert('股票查詢失敗（請檢查網路或 API 狀態）');
+      }
     }
 
     window.onload=()=>{
