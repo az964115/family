@@ -212,7 +212,10 @@
       const desc = descriptionInput.value.trim();
       if(isNaN(amount)||amount<=0){ alert('請輸入有效金額'); return; }
       const now = new Date();
-      const record={role,category,amount,description:desc,timestamp:now.getTime(),date:now.toISOString().slice(0,10)};
+      const localDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10);
+      const record={role,category,amount,description:desc,timestamp:now.getTime(),date:localDate};
       recordsRef.push(record,err=>{
         if(err){alert('儲存失敗');console.error(err);}
         else{alert('記帳成功');amountInput.value='';descriptionInput.value='';loadRecentRecords();updateStats();}
@@ -237,7 +240,10 @@
       const arr=Object.values(snap.val()||[]);
       if (arr.length === 0) return;
       
-      const today=new Date().toISOString().slice(0,10);
+      const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+        .toISOString()
+        .slice(0, 10);
+
       const now=Date.now(),day=86400000;
       const todayTotal=arr.filter(r=>r.date===today).reduce((s,r)=>s+r.amount,0);
       const arr7=arr.filter(r=>now-r.timestamp<7*day);
@@ -292,12 +298,13 @@
     async function loadStock(){
       const symbol=symbolInput.value.trim();
       if(!symbol.match(/^\d+$/)){alert('請輸入有效代碼');return;}
-      const token="d3optfhr01quo6o5fc1gd3optfhr01quo6o5fc20";
+      const token="d3oq1vhr01quo6o5fuagd3oq1vhr01quo6o5fub0";
       const now=Math.floor(Date.now()/1000),from=now-86400*30;
       try{
-        const res=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TWS:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
+        const res=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TW:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
         const data=await res.json();
-        if(data.s!=="ok"){alert('無法取得股票資料');return;}
+        console.log("Finnhub 回傳：", data);
+        if(data.s!=="ok"){alert('無法取得股票資料（可能代碼錯誤或 API 流量用盡）');return;}
         const labels=data.t.map(ts=>new Date(ts*1000).toISOString().slice(5,10));
         const prices=data.c;
         if(stockChart)stockChart.destroy();
