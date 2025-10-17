@@ -2,7 +2,7 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <title>🐷 豬豬內網 全新版</title>
+  <title>🐷豬豬e網🐷</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -62,13 +62,13 @@
     body.theme-day { background-color: #fdf6e3; color: #333; }
     body.theme-day .container { background: #fff3e0; color: #333; }
     body.theme-day .announcement { background-color: #fff8dc; border-left-color: #f0a500; color: #444; }
-    body.theme-night { background-color: #121212; color: #eee; }
-    body.theme-night .container { background: #222; color: #eee; }
+    body.theme-night { background-color: #121212; color: #000; }
+    body.theme-night .container { background: #000; color: #eee; }
     body.theme-night .announcement { background-color: #2a2a2a; border-left-color: #ffa500; color: #eee; }
     body.theme-night button { background-color: #ffa500; color: #222; box-shadow: 0 3px 6px rgb(255 165 0 / 0.6); }
     body.theme-night input, body.theme-night select, body.theme-night textarea { background: #333; border-color: #555; color: #eee; }
     body.theme-night ul { background: #1a1a1a; box-shadow: inset 0 0 5px #ffa500aa; color: #eee; }
-    body.theme-forest { background-color: #1e2f1e; color: #e8f5e9; }
+    body.theme-forest { background-color: #1e2f1e; color: #000; }
     body.theme-forest .container { background: #2e4d2e; color: #e8f5e9; }
     body.theme-forest .announcement { background-color: #3a6e3a; border-left-color: #aed581; color: #dcedc8; }
     body.theme-forest button { background-color: #aed581; color: #2e4d2e; }
@@ -144,6 +144,7 @@
     <h3>📅 自訂期間查詢</h3>
     <div class="flex-row">
       <div class="flex-grow"><input type="date" id="startDate" /></div>
+      <div class="flex-grow"> ~ </div> 
       <div class="flex-grow"><input type="date" id="endDate" /></div>
     </div>
     <button onclick="queryPeriodExpenses()">查詢期間支出</button>
