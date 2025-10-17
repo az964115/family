@@ -184,7 +184,8 @@
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
-      databaseURL: "https://piggynet-93c33-default-rtdb.firebaseio.com",
+      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app/
+",
       projectId: "piggynet-93c33",
       storageBucket: "piggynet-93c33.appspot.com",
       messagingSenderId: "65171780729",
@@ -302,14 +303,25 @@
     }
 
     window.onload=()=>{
-      window.todayTotalEl=document.getElementById('todayTotal');
-      window.avg7Days=document.getElementById('avg7Days');
-      window.avg30Days=document.getElementById('avg30Days');
-      window.monthTotalEl=document.getElementById('monthTotal');
-      window.warningMsg=document.getElementById('warningMsg');
-      window.forecastWeek=document.getElementById('forecastWeek');
-      loadRecentRecords(); updateStats(); loadFavorites();
-    }
+      window.roleSelect = document.getElementById('roleSelect');
+      window.categorySelect = document.getElementById('categorySelect');
+      window.amountInput = document.getElementById('amountInput');
+      window.descriptionInput = document.getElementById('descriptionInput');
+      window.recordList = document.getElementById('recordList');
+      window.periodResult = document.getElementById('periodResult');
+
+      window.todayTotalEl = document.getElementById('todayTotal');
+      window.avg7Days = document.getElementById('avg7Days');
+      window.avg30Days = document.getElementById('avg30Days');
+      window.monthTotalEl = document.getElementById('monthTotal');
+      window.warningMsg = document.getElementById('warningMsg');
+      window.forecastWeek = document.getElementById('forecastWeek');
+      loadRecentRecords(); 
+      updateStats(); 
+      loadFavorites();
+
+      console.log("✅ Firebase initialized and elements bound");
+    };
   </script>
 </body>
 </html>
