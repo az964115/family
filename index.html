@@ -74,8 +74,8 @@
     body.theme-day { background-color: #fdf6e3; color: #333; }
     body.theme-day .container { background: #fff3e0; color: #333; }
     body.theme-day .announcement { background-color: #fff8dc; border-left-color: #f0a500; color: #444; }
-    body.theme-night { background-color: #121212; color: #000; }
-    body.theme-night .container { background: #000; color: #000; }
+    body.theme-night { background-color: #121212; color: #eee; }
+    body.theme-night .container { background: #1e1e1e; color: #eee; }
     body.theme-night .announcement { background-color: #2a2a2a; border-left-color: #ffa500; color: #eee; }
     body.theme-night button { background-color: #ffa500; color: #222; box-shadow: 0 3px 6px rgb(255 165 0 / 0.6); }
     body.theme-night input, body.theme-night select, body.theme-night textarea { background: #333; border-color: #555; color: #eee; }
@@ -161,14 +161,10 @@
     <button onclick="addRecord()">記錄支出</button>
     <hr>
 
-    <h3>📅 自訂期間查詢</h3>
-    <div class="flex-row">
-      <div class="flex-grow"><input type="date" id="startDate" /></div>
-      <div class="flex-grow">~~</div> 
-      <div class="flex-grow"><input type="date" id="endDate" /></div>
-    </div>
-    <button onclick="queryPeriodExpenses()">查詢期間支出</button>
-    <div id="periodResult" class="stat-box">請選擇日期並點擊查詢</div>
+    <h3>📊 各類別支出統計</h3>
+    <button onclick="analyzeCategory()">查看統計</button>
+    <div id="categoryResult" class="stat-box">點擊查看統計資料</div>
+    <canvas id="categoryChart" style="margin-top: 15px;"></canvas>
 
     <hr>
 
@@ -184,14 +180,13 @@
       <p>最近 30 天平均每日支出：<span id="avg30Days">0</span> 元</p>
       <p>當月累計支出：<span id="monthTotal">0</span> 元</p>
       <p id="warningMsg" style="color:#c0392b; font-weight:bold;"></p>
-      <p>預測下週支出：約 <span id="forecastWeek">0</span> 元</p>
     </div>
   </section>
 
   <section class="container">
     <h2>📈 股票查詢</h2>
     <div class="flex-row">
-      <div class="flex-grow"><input type="text" id="symbolInput" placeholder="輸入股票代碼（如 2330）" /></div>
+      <div class="flex-grow"><input type="text" id="symbolInput" value="0050" placeholder="輸入股票代碼（如 2330）" /></div>
       <button onclick="loadStock()">查詢</button>
     </div>
 
@@ -276,12 +271,10 @@ function login(){
       document.getElementById('mainContent').style.display = 'none';
       document.getElementById('loginSection').style.display = 'block';
       recordList.innerHTML = '<li>暫無記錄</li>';
-      periodResult.textContent = '請選擇日期並點擊查詢';
       todayTotalEl.textContent = '0';
       avg7Days.textContent = '0';
       avg30Days.textContent = '0';
       monthTotalEl.textContent = '0';
-      forecastWeek.textContent = '0';
       warningMsg.textContent = '';
       alert('您已登出！');
     }
@@ -362,19 +355,60 @@ function login(){
       avg7Days.textContent = avg7.toFixed(2);
       avg30Days.textContent = avg30.toFixed(2);
       monthTotalEl.textContent = monthTotal.toFixed(2);
-      forecastWeek.textContent = (avg7 * 7).toFixed(2);
     }
+    function analyzeCategory() {
+    userRef.once('value').then(snap => {
+      const records = Object.values(snap.val() || []);
+        if (records.length === 0) {
+        categoryResult.textContent = '暫無資料';
+        return;
+      }
 
-    async function queryPeriodExpenses(){
-      const start=startDate.value,end=endDate.value;
-      if(!start||!end){alert('請輸入完整日期');return;}
-      if(start>end){alert('開始日期不能晚於結束日期');return;}
-      const snap=await userRef.once('value');
-      const arr=Object.values(snap.val()||[]);
-      const total=arr.filter(r=>r.date>=start&&r.date<=end).reduce((s,r)=>s+r.amount,0);
-      periodResult.textContent=`期間內總支出：${total.toFixed(2)} 元 (${start} ~ ${end})`;
-    }
+      const categoryMap = {};
+      records.forEach(r => {
+        categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
+      });
 
+      const categories = Object.keys(categoryMap);
+      const values = categories.map(c => categoryMap[c]);
+
+      categoryResult.innerHTML = categories.map(c =>
+        `${c}: ${categoryMap[c].toFixed(2)} 元`
+      ).join('<br>');
+
+      if (window.categoryChart) window.categoryChart.destroy();
+      const ctx = document.getElementById('categoryChart').getContext('2d');
+      window.categoryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: categories,
+          datasets: [{
+            label: '各類別支出總額',
+            data: values,
+            backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#9b59b6'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: getComputedStyle(document.body).color }
+            },
+            x: {
+              ticks: { color: getComputedStyle(document.body).color }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: getComputedStyle(document.body).color }
+            }
+          }
+        }
+      });
+    });
+  }
     function loadFavorites(){
       favRef.once('value',snap=>{
         const favs=snap.val()||{},list=favoriteList;
@@ -463,14 +497,12 @@ function login(){
       window.amountInput = document.getElementById('amountInput');
       window.descriptionInput = document.getElementById('descriptionInput');
       window.recordList = document.getElementById('recordList');
-      window.periodResult = document.getElementById('periodResult');
 
       window.todayTotalEl = document.getElementById('todayTotal');
       window.avg7Days = document.getElementById('avg7Days');
       window.avg30Days = document.getElementById('avg30Days');
       window.monthTotalEl = document.getElementById('monthTotal');
       window.warningMsg = document.getElementById('warningMsg');
-      window.forecastWeek = document.getElementById('forecastWeek');
 
       loadFavorites();
 
