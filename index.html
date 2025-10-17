@@ -92,7 +92,7 @@
 
   <div class="header">
     <h1>🐷 豬豬內網 全新版</h1>
-    <div class="announcement">📢 記帳區上限啦！</div>
+    <div class="announcement">📢 記帳區上線啦！請媽媽和妹妹給我一百萬</div>
   </div>
 
   <!-- 每日記帳 -->
@@ -235,20 +235,24 @@
     async function updateStats(){
       const snap=await recordsRef.once('value');
       const arr=Object.values(snap.val()||[]);
+      if (arr.length === 0) return;
+      
       const today=new Date().toISOString().slice(0,10);
       const now=Date.now(),day=86400000;
       const todayTotal=arr.filter(r=>r.date===today).reduce((s,r)=>s+r.amount,0);
-      const arr7=arr.filter(r=>now-r.timestamp<7*day),arr30=arr.filter(r=>now-r.timestamp<30*day);
-      const avg7=(arr7.reduce((s,r)=>s+r.amount,0)/7).toFixed(2);
-      const avg30=(arr30.reduce((s,r)=>s+r.amount,0)/30).toFixed(2);
+      const arr7=arr.filter(r=>now-r.timestamp<7*day);
+      const arr30 = arr.filter(r => now - r.timestamp < 30*day);
+      
+      const avg7 = +(arr7.reduce((s,r)=>s+r.amount,0)/7).toFixed(2);
+      const avg30 = +(arr30.reduce((s,r)=>s+r.amount,0)/30).toFixed(2);
       const month=today.slice(0,7);
       const monthTotal=arr.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s+r.amount,0);
       warningMsg.textContent=todayTotal>avg7*2?"⚠️ 今日花太多啦！":"";
       todayTotalEl.textContent=todayTotal.toFixed(2);
-      avg7Days.textContent=avg7;
-      avg30Days.textContent=avg30;
-      monthTotalEl.textContent=monthTotal.toFixed(2);
-      forecastWeek.textContent=(avg7*7).toFixed(2);
+      avg7Days.textContent = avg7.toFixed(2);
+      avg30Days.textContent = avg30.toFixed(2);
+      monthTotalEl.textContent = monthTotal.toFixed(2);
+      forecastWeek.textContent = (avg7 * 7).toFixed(2);
     }
 
     async function queryPeriodExpenses(){
@@ -288,7 +292,7 @@
     async function loadStock(){
       const symbol=symbolInput.value.trim();
       if(!symbol.match(/^\d+$/)){alert('請輸入有效代碼');return;}
-      const token="你的_finnhub_API_KEY";
+      const token="d3optfhr01quo6o5fc1gd3optfhr01quo6o5fc20";
       const now=Math.floor(Date.now()/1000),from=now-86400*30;
       try{
         const res=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=TWS:${symbol}&resolution=D&from=${from}&to=${now}&token=${token}`);
