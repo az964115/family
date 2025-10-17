@@ -307,8 +307,12 @@
           alert('查詢失敗（代碼錯誤或暫無資料）');
           return;
         }
-        const labels = data.data.map(row => row[0].replace(/\//g, '-')); // 日期
-        const prices = data.data.map(row => parseFloat(row[6])); // 收盤價
+        const labels = data.data.map(row => {
+          const parts = row[0].split('/');
+          const year = parseInt(parts[0]) + 1911; // 民國轉西元
+          return `${year}-${parts[1]}-${parts[2]}`;
+        });
+        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, ''))); // 收盤價
         if (stockChart) stockChart.destroy();
         stockChart = new Chart(chartCtx, {
           type: 'line',
