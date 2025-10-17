@@ -316,7 +316,7 @@ function login(){
       const avg30 = +(arr30.reduce((s,r)=>s+r.amount,0)/30).toFixed(2);
       const month=today.slice(0,7);
       const monthTotal=arr.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s+r.amount,0);
-      warningMsg.textContent=todayTotal>avg7*2?"⚠️ 今日花太多啦！":"";
+      warningMsg.textContent=todayTotal>1000?"⚠️ 今日花太多啦！":"";
       todayTotalEl.textContent=todayTotal.toFixed(2);
       avg7Days.textContent = avg7.toFixed(2);
       avg30Days.textContent = avg30.toFixed(2);
