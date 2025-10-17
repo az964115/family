@@ -20,6 +20,18 @@
       box-shadow: 0 3px 6px rgb(0 0 0 / 0.15);
       transition: background-color 0.3s;
     }
+    ul li button {
+      background-color: #e74c3c;
+      color: white;
+      padding: 4px 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      margin-left: 10px;
+    }
+    ul li button:hover {
+      background-color: #c0392b;
+    }
+
     button:hover { background-color: #d88e00; }
     input, select, textarea {
       padding: 8px; font-size: 16px;
@@ -210,6 +222,22 @@
       updateStats();
     }
 
+    function deleteRecord(key) {
+      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+
+      userRef.child(key).remove(err => {
+        if (err) {
+          alert("刪除失敗！");
+          console.error(err);
+        } else {
+          alert("已刪除紀錄！");
+          loadRecentRecords(); // 重新載入
+          updateStats();       // 更新統計資料
+        }
+      });
+    }
+
+
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -286,17 +314,30 @@ function login(){
     }
 
     function loadRecentRecords(){
-      userRef.orderByChild('timestamp').limitToLast(20).once('value',snap=>{
-        const records=snap.val(),list=recordList;
-        list.innerHTML='';
-        if(!records){list.innerHTML='<li>暫無記錄</li>';return;}
-        Object.values(records).sort((a,b)=>b.timestamp-a.timestamp).forEach(r=>{
-          const li=document.createElement('li');
-          li.textContent=`${r.date} - ${r.role} - ${r.category} - ${r.amount} 元 - ${r.description}`;
-          list.appendChild(li);
-        });
+      userRef.orderByChild('timestamp').limitToLast(20).once('value', snap => {
+        const records = snap.val(), list = recordList;
+        list.innerHTML = '';
+        if (!records) {
+          list.innerHTML = '<li>暫無記錄</li>';
+          return;
+        }
+
+        // 把 key 加進來處理（用 Object.entries 而不是 Object.values）
+        Object.entries(records)
+          .sort((a, b) => b[1].timestamp - a[1].timestamp)
+          .forEach(([key, r]) => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <div style="display:flex; justify-content: space-between; align-items: center;">
+                <span>${r.date} - ${r.role} - ${r.category} - ${r.amount} 元 - ${r.description}</span>
+                <button onclick="deleteRecord('${key}')">🗑️ 刪除</button>
+              </div>
+            `;
+            list.appendChild(li);
+          });
       });
     }
+
 
     async function updateStats(){
       const snap=await userRef.once('value');
