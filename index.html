@@ -115,6 +115,7 @@
     <button onclick="setTheme('day')">🌞 白天</button>
     <button onclick="setTheme('night')">🌙 夜間</button>
     <button onclick="setTheme('forest')">🌿 森林</button>
+    <button onclick="changePassword()">🔐 修改密碼</button>
     <button onclick="logout()">🚪 登出</button>
   </div>
 
@@ -265,6 +266,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     let userRef = null; 
+    let pfRef = null;
 
     function initForUser(user){
       userRef = db.ref(`users/${user}/records`);
@@ -337,8 +339,7 @@
       document.getElementById("boardInput").value = "";
     }
 
-    loadBoard();
-    let pfRef = null;
+    window.addEventListener("load", loadBoard);
 
     function loadPortfolio() {
       if (!pfRef) return;
@@ -393,20 +394,6 @@
   jason: "930352"
 };
 
-function login(){
-  const user = document.getElementById('loginUser').value;
-  const pass = document.getElementById('loginPassword').value.trim();
-
-  if(pass === USERS[user]){
-    localStorage.setItem('currentUser', user);
-    alert(`歡迎回來，${user}!`);
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block'; 
-    initForUser(user);
-  } else {
-    alert("密碼錯誤！");
-  }
-}
     function logout() {
       localStorage.removeItem('currentUser');
       document.getElementById('mainContent').style.display = 'none';
@@ -419,6 +406,63 @@ function login(){
       warningMsg.textContent = '';
       alert('您已登出！');
     }
+    async function changePassword() {
+      const user = localStorage.getItem('currentUser');
+      if (!user) return alert("請先登入");
+
+      const oldPass = prompt("請輸入舊密碼：");
+      if (!oldPass) return;
+
+      const snap = await db.ref(`users/${user}/password`).get();
+      const currentPass = snap.exists() ? snap.val() : USERS[user];
+
+      if (oldPass !== currentPass) {
+        alert("舊密碼錯誤！");
+        return;
+      }
+
+      const newPass = prompt("請輸入新密碼（至少3個字）");
+      if (!newPass || newPass.length < 3) {
+        alert("新密碼無效！");
+        return;
+      }
+
+      await db.ref(`users/${user}/password`).set(newPass);
+      USERS[user] = newPass; // 更新本地暫存（避免立即登出後錯誤）
+      localStorage.setItem('lastChangedPass', newPass);
+
+      alert("✅ 密碼修改成功，下次登入請使用新密碼！");
+    }
+
+    async function login(){
+      const user = document.getElementById('loginUser').value;
+      const pass = document.getElementById('loginPassword').value.trim();
+
+      const ref = db.ref(`users/${user}/password`);
+      const snap = await ref.get();
+      let storedPass;
+
+      if (snap.exists()) {
+        storedPass = snap.val();
+      } else {
+        storedPass = USERS[user];
+        await ref.set(storedPass);
+      }
+
+
+
+      if(pass === storedPass){
+        localStorage.setItem('currentUser', user);
+        alert(`歡迎回來，${user}!`);
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block'; 
+        initForUser(user);
+      } else {
+        alert("密碼錯誤！");
+        document.getElementById('loginPassword').value = "";
+      }
+    }
+
 
 
     function setTheme(mode){
