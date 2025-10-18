@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f0a500">
   <meta charset="UTF-8" />
   <title>🐷豬豬e網🐷</title>
   <style>
@@ -88,6 +90,7 @@
     #chart { max-width: 100%; height: 300px; margin-top: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgb(0 0 255 / 0.15); background-color: white; }
     .top-right { position: fixed; top: 15px; right: 15px; display: flex; gap: 8px; z-index: 999; }
     .small-note { font-size: 0.85em; color: #777; }
+
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -123,6 +126,14 @@
   </div>
 
   <div style="margin-bottom: 20px;">
+    <section class="container">
+      <h2>💬 家庭公告板</h2>
+      <div id="boardMessages" style="background:#fff; padding:10px; border-radius:8px; max-height:200px; overflow-y:auto; box-shadow:inset 0 0 5px #ccc;"></div>
+      <div style="margin-top:10px;">
+        <textarea id="boardInput" placeholder="輸入留言..." rows="2"></textarea>
+        <button onclick="postMessage()">發佈留言</button>
+      </div>
+    </section>
     <h3>🧩 新電影區 https://www.movieffm.net/home/</h3>
     <iframe src="https://www.movieffm.net/home/" width="100%" height="300" style="border: 2px solid #f0a500; border-radius: 10px;"></iframe>
   </div>
@@ -210,16 +221,51 @@
       </div>
     </div>
   </section>
+  <section class="container">
+      <h2>💼 我的投資組合</h2>
+      <div class="flex-row">
+        <div class="flex-grow">
+          <label>股票代號</label>
+          <input type="text" id="pfSymbol" placeholder="例如 2330" />
+        </div>
+        <div class="flex-grow">
+          <label>持股數量</label>
+          <input type="number" id="pfShares" placeholder="100" />
+        </div>
+        <div class="flex-grow">
+          <label>成本價</label>
+          <input type="number" id="pfCost" placeholder="560" />
+        </div>
+        <button onclick="addPortfolio()">新增</button>
+      </div>
+
+      <h3 style="margin-top:15px;">📋 我的持股列表</h3>
+      <ul id="portfolioList"><li>暫無資料</li></ul>
+    </section>
+
 </div>
 
   <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
+      authDomain: "piggynet-93c33.firebaseapp.com",
+      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "piggynet-93c33",
+      storageBucket: "piggynet-93c33.appspot.com",
+      messagingSenderId: "65171780729",
+      appId: "1:65171780729:web:ce5f7272f25a75f43490a8"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
     let userRef = null; 
 
     function initForUser(user){
       userRef = db.ref(`users/${user}/records`);
       document.getElementById('roleSelect').value = user; 
+      pfRef = db.ref(`users/${user}/portfolio`);
       loadRecentRecords();
       updateStats();
+      loadPortfolio();
     }
 
     function deleteRecord(key) {
@@ -236,19 +282,88 @@
         }
       });
     }
+    const boardRef = db.ref("family/board");
 
+    function loadBoard() {
+      boardRef.limitToLast(10).on("value", snap => {
+        const box = document.getElementById("boardMessages");
+        const data = snap.val();
+        box.innerHTML = "";
+        if (!data) {
+          box.innerHTML = "<p>目前沒有留言。</p>";
+          return;
+        }
+        const entries = Object.values(data).sort((a,b)=>b.time-a.time);
+        entries.forEach(m => {
+          const t = new Date(m.time).toLocaleString('zh-TW');
+          const div = document.createElement('div');
+          div.style.borderBottom = "1px solid #eee";
+          div.style.padding = "4px 0";
+          div.innerHTML = `<b>${m.user}</b>：${m.msg} <span style="color:#777;font-size:0.85em;">(${t})</span>`;
+          box.appendChild(div);
+        });
+      });
+    }
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
-      authDomain: "piggynet-93c33.firebaseapp.com",
-      databaseURL: "https://piggynet-93c33-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "piggynet-93c33",
-      storageBucket: "piggynet-93c33.appspot.com",
-      messagingSenderId: "65171780729",
-      appId: "1:65171780729:web:ce5f7272f25a75f43490a8"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    function postMessage(){
+      const msg = document.getElementById("boardInput").value.trim();
+      if (!msg) return alert("請輸入內容");
+      boardRef.push({
+        user: localStorage.getItem("currentUser"),
+        msg,
+        time: Date.now()
+      });
+      document.getElementById("boardInput").value = "";
+    }
+
+    loadBoard();
+    let pfRef = null;
+
+    function loadPortfolio() {
+      if (!pfRef) return;
+      pfRef.on("value", async snap => {
+        const data = snap.val() || {};
+        const list = document.getElementById("portfolioList");
+        list.innerHTML = "";
+
+        for (const [code, info] of Object.entries(data)) {
+          try {
+            const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+            const stock = await res.json();
+            let price = 0;
+            if (stock.stat === "OK" && stock.data.length > 0) {
+              const last = stock.data[stock.data.length - 1];
+              price = parseFloat(last[6].replace(/,/g, ""));
+            }
+            const gain = ((price - info.cost) * info.shares).toFixed(2);
+            const color = gain >= 0 ? "green" : "red";
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <b>${code}</b>｜${info.shares}股｜成本 ${info.cost}｜現價 ${price.toFixed(2)}｜
+              <span style="color:${color};">損益 ${gain}</span>
+              <button onclick="removePortfolio('${code}')">❌</button>
+            `;
+            list.appendChild(li);
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        if (list.innerHTML === "") list.innerHTML = "<li>暫無資料</li>";
+      });
+    }
+
+    function addPortfolio() {
+      const code = pfSymbol.value.trim();
+      const shares = parseFloat(pfShares.value);
+      const cost = parseFloat(pfCost.value);
+      if (!code || isNaN(shares) || isNaN(cost)) return alert("請輸入完整資料");
+      pfRef.child(code).set({ shares, cost });
+      pfSymbol.value = pfShares.value = pfCost.value = "";
+    }
+
+    function removePortfolio(code) {
+      if (confirm("確定刪除這筆投資？")) pfRef.child(code).remove();
+    }
 
     const USERS = {
   mom: "mom",
@@ -430,20 +545,38 @@ function login(){
       });
     });
   }
-    function loadFavorites(){
-      favRef.once('value',snap=>{
-        const favs=snap.val()||{},list=favoriteList;
-        list.innerHTML='';
-        const codes=Object.keys(favs);
-        if(codes.length===0){favRef.update({'2330':true,'0050':true});return loadFavorites();}
-        codes.forEach(code=>{
-          const li=document.createElement('li');
-          li.textContent=code;
-          li.addEventListener('click',()=>{symbolInput.value=code;loadStock();});
-          list.appendChild(li);
-        });
-      });
+    async function loadFavorites() {
+  favRef.once('value', async snap => {
+    const favs = snap.val() || {};
+    const list = favoriteList;
+    list.innerHTML = '';
+    const codes = Object.keys(favs);
+    if (codes.length === 0) {
+      favRef.update({ '2330': true, '0050': true });
+      return loadFavorites();
     }
+
+    for (const code of codes) {
+      try {
+        const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+        const data = await res.json();
+        if (data.stat === "OK" && data.data.length > 1) {
+          const last = parseFloat(data.data[data.data.length - 1][6].replace(/,/g, ""));
+          const prev = parseFloat(data.data[data.data.length - 2][6].replace(/,/g, ""));
+          const diff = (last - prev).toFixed(2);
+          const color = diff >= 0 ? "green" : "red";
+          const li = document.createElement('li');
+          li.innerHTML = `${code} <span style="color:${color};">(${diff >= 0 ? '▲' : '▼'}${Math.abs(diff)})</span>`;
+          li.addEventListener('click', () => { symbolInput.value = code; loadStock(); });
+          list.appendChild(li);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  });
+}
+
 
     function addFavorite(){
       const code=newFavorite.value.trim();
@@ -536,6 +669,11 @@ function login(){
 
       console.log("✅ Firebase initialized and elements bound");
     }; 
+    if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(() => console.log("✅ Service Worker 註冊完成"))
+    .catch(err => console.error("❌ SW 註冊失敗", err));
+}
 
   </script>
 </body>
