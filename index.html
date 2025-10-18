@@ -105,7 +105,7 @@
     <option value="mom">媽媽</option>
     <option value="dad">爸爸</option>
     <option value="debby">妹妹</option>
-    <option value="xiaoguai">小乖</option>
+    <option value="jason">Jason</option>
   </select>
 
   <label>密碼</label>
@@ -135,12 +135,19 @@
       </div>
     </section>
     <h3>🧩 新電影區 https://www.movieffm.net/home/</h3>
-    <iframe src="https://www.movieffm.net/home/" width="100%" height="300" style="border: 2px solid #f0a500; border-radius: 10px;"></iframe>
-  </div>
-  <div style="margin-bottom: 20px;">
+    <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 300px;">
+      <iframe src="https://www.movieffm.net/home/"
+        width="100%" height="600" style="transform:scale(0.75); transform-origin: 0 0; border:none;">
+      </iframe>
+    </div>
+
     <h3>🧩 免費貼圖區(更多)</h3>
-    <iframe src="https://lps-editor-3099.landpress.line.me/freesticker/?utm_source=OA&utm_medium=liverichmenu&utm_campaign=traffic_20250829_R1_0000_mass_sticker_C00_NA_non_liverichmenu" width="100%" height="300" style="border: 2px solid #f0a500; border-radius: 10px;"></iframe>
-  </div>
+    <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 300px;">
+      <iframe src="https://lps-editor-3099.landpress.line.me/freesticker/?utm_source=OA&utm_medium=liverichmenu&utm_campaign=traffic_20250829_R1_0000_mass_sticker_C00_NA_non_liverichmenu"
+        width="100%" height="600" style="transform:scale(0.75); transform-origin: 0 0; border:none;">
+      </iframe>
+    </div>
+
   <section class="container">
     <h2>📊 每日記帳</h2>
 
@@ -172,15 +179,6 @@
     <button onclick="addRecord()">記錄支出</button>
     <hr>
 
-    <h3>📊 各類別支出統計</h3>
-    <label>開始日期</label>
-    <input type="date" id="startDate" />
-
-    <label>結束日期</label>
-    <input type="date" id="endDate" />
-    <button onclick="analyzeCategory()">查看統計</button>
-    <div id="categoryResult" class="stat-box">點擊查看統計資料</div>
-    <canvas id="categoryChart" style="margin-top: 15px;"></canvas>
 
     <hr>
 
@@ -197,6 +195,15 @@
       <p>當月累計支出：<span id="monthTotal">0</span> 元</p>
       <p id="warningMsg" style="color:#c0392b; font-weight:bold;"></p>
     </div>
+    <h3>📊 各類別支出統計</h3>
+    <label>開始日期</label>
+    <input type="date" id="startDate" />
+
+    <label>結束日期</label>
+    <input type="date" id="endDate" />
+    <button onclick="analyzeCategory()">查看統計</button>
+    <div id="categoryResult" class="stat-box">點擊查看統計資料</div>
+    <canvas id="categoryChart" style="margin-top: 15px;"></canvas>
   </section>
 
   <section class="container">
@@ -209,6 +216,7 @@
     <div class="flex-row" style="margin-top:10px; gap:40px;">
       <div class="flex-grow">
         <h4>⭐ 自選股清單</h4>
+        <p class="small-note" style="margin-top:-8px;">（顯示最新收盤價的漲跌變化，不是當前即時價）</p>
         <ul id="favoriteList"></ul>
         <div style="margin-top:10px;">
           <input type="text" id="newFavorite" placeholder="新增股票代碼" />
@@ -217,6 +225,7 @@
       </div>
       <div class="flex-grow" style="min-width:300px;">
         <h4>📊 股價走勢圖</h4>
+        <p class="small-note" style="margin-top:-8px;">（請輸入代碼查詢，或點擊自選股項目）</p>
         <canvas id="chart"></canvas>
       </div>
     </div>
@@ -288,21 +297,35 @@
       boardRef.limitToLast(10).on("value", snap => {
         const box = document.getElementById("boardMessages");
         const data = snap.val();
+        const currentUser = localStorage.getItem("currentUser");
         box.innerHTML = "";
         if (!data) {
           box.innerHTML = "<p>目前沒有留言。</p>";
           return;
         }
-        const entries = Object.values(data).sort((a,b)=>b.time-a.time);
+        const entries = Object.entries(data)
+          .map(([key, val]) => ({ key, ...val }))
+          .sort((a,b)=>b.time-a.time);
+
         entries.forEach(m => {
           const t = new Date(m.time).toLocaleString('zh-TW');
           const div = document.createElement('div');
           div.style.borderBottom = "1px solid #eee";
-          div.style.padding = "4px 0";
-          div.innerHTML = `<b>${m.user}</b>：${m.msg} <span style="color:#777;font-size:0.85em;">(${t})</span>`;
+          div.style.padding = "6px 0";
+          div.innerHTML = `
+            <b>${m.user}</b>：${m.msg}
+            <span style="color:#777;font-size:0.85em;">(${t})</span>
+            ${m.user === currentUser ? `<button style="margin-left:10px;font-size:12px;" onclick="deleteBoardMessage('${m.key}')">🗑️ 刪除</button>` : ""}
+          `;
           box.appendChild(div);
         });
       });
+    }
+    function deleteBoardMessage(key) {
+      if (!confirm("確定要刪除此留言？")) return;
+      boardRef.child(key).remove()
+        .then(()=>alert("留言已刪除"))
+        .catch(e=>console.error(e));
     }
 
     function postMessage(){
@@ -336,12 +359,12 @@
               price = parseFloat(last[6].replace(/,/g, ""));
             }
             const gain = ((price - info.cost) * info.shares).toFixed(2);
-            const color = gain >= 0 ? "green" : "red";
+            const color = gain >= 0 ? "red" : "green"; 
             const li = document.createElement("li");
             li.innerHTML = `
               <b>${code}</b>｜${info.shares}股｜成本 ${info.cost}｜現價 ${price.toFixed(2)}｜
-              <span style="color:${color};">損益 ${gain}</span>
-              <button onclick="removePortfolio('${code}')">❌</button>
+              <span style="color:${color}; font-weight:bold;">損益 ${gain}</span>
+              <button onclick="removePortfolio('${code}')" style="margin-left:8px;">刪除</button>
             `;
             list.appendChild(li);
           } catch (e) {
@@ -369,7 +392,7 @@
   mom: "mom",
   dad: "dad",
   debby: "debby",
-  xiaoguai: "930352"
+  jason: "930352"
 };
 
 function login(){
@@ -564,7 +587,7 @@ function login(){
           const last = parseFloat(data.data[data.data.length - 1][6].replace(/,/g, ""));
           const prev = parseFloat(data.data[data.data.length - 2][6].replace(/,/g, ""));
           const diff = (last - prev).toFixed(2);
-          const color = diff >= 0 ? "green" : "red";
+          const color = diff >= 0 ? "red" : "green";
           const li = document.createElement('li');
           li.innerHTML = `${code} <span style="color:${color};">(${diff >= 0 ? '▲' : '▼'}${Math.abs(diff)})</span>`;
           li.addEventListener('click', () => { symbolInput.value = code; loadStock(); });
