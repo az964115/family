@@ -71,7 +71,6 @@
       margin-top: 10px; box-shadow: inset 0 0 6px #f0a500aa;
       font-weight: 600;
     }
-    /* 主題切換 */
     body.theme-day { background-color: #fdf6e3; color: #333; }
     body.theme-day .container { background: #fff3e0; color: #333; }
     body.theme-day .announcement { background-color: #fff8dc; border-left-color: #f0a500; color: #444; }
@@ -141,7 +140,7 @@
     </div>
 
     <h3>🧩 免費貼圖區(更多)</h3>
-    <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 300px;">
+    <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 600px;">
       <iframe src="https://lps-editor-3099.landpress.line.me/freesticker/?utm_source=OA&utm_medium=liverichmenu&utm_campaign=traffic_20250829_R1_0000_mass_sticker_C00_NA_non_liverichmenu"
         width="100%" height="600" style="transform:scale(1); transform-origin: 0 0; border:none;">
       </iframe>
@@ -456,8 +455,6 @@ function login(){
           list.innerHTML = '<li>暫無記錄</li>';
           return;
         }
-
-        // 把 key 加進來處理（用 Object.entries 而不是 Object.values）
         Object.entries(records)
           .sort((a, b) => b[1].timestamp - a[1].timestamp)
           .forEach(([key, r]) => {
