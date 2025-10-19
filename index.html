@@ -337,7 +337,7 @@
       loadFavorites();
 
       const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1); //.toISOString().split('T')[0];
       const today = new Date().toISOString().split('T')[0];
       startDateInput.value = startDateInput.value || firstDay;
       endDateInput.value = endDateInput.value || today;
