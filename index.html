@@ -80,6 +80,14 @@
     body.theme-night button { background-color: #ffa500; color: #222; box-shadow: 0 3px 6px rgb(255 165 0 / 0.6); }
     body.theme-night input, body.theme-night select, body.theme-night textarea { background: #333; border-color: #555; color: #eee; }
     body.theme-night ul { background: #1a1a1a; box-shadow: inset 0 0 5px #ffa500aa; color: #eee; }
+    body.theme-night .small-note,
+    body.theme-night ul,
+    body.theme-night ul li,
+    body.theme-night .stat-box,
+    body.theme-night .announcement {
+      color: #000 !important;
+    }
+
     body.theme-forest { background-color: #1e2f1e; color: #000; }
     body.theme-forest .container { background: #2e4d2e; color: #000; }
     body.theme-forest .announcement { background-color: #3a6e3a; border-left-color: #aed581; color: #dcedc8; }
@@ -290,16 +298,78 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let userRef = null; 
+    let userRef = null;
     let pfRef = null;
+
+    const roleSelect = document.getElementById('roleSelect');
+    const categorySelect = document.getElementById('categorySelect');
+    const amountInput = document.getElementById('amountInput');
+    const descriptionInput = document.getElementById('descriptionInput');
+    const recordList = document.getElementById('recordList');
+    const todayTotalEl = document.getElementById('todayTotal');
+    const avg7Days = document.getElementById('avg7Days');
+    const avg30Days = document.getElementById('avg30Days');
+    const monthTotalEl = document.getElementById('monthTotal');
+    const warningMsg = document.getElementById('warningMsg');
+    const salaryInput = document.getElementById('salaryInput');
+    const salaryStatus = document.getElementById('salaryStatus');
+    const startDateInput = document.getElementById('startDate');
+    const endDateInput = document.getElementById('endDate');
+    const symbolInput = document.getElementById('symbolInput');
+    const favoriteList = document.getElementById('favoriteList');
+    const newFavorite = document.getElementById('newFavorite');
+    const chartCanvas = document.getElementById('chart');
+
+    const USERS = {
+      mom: "me",
+      dad: "dt",
+      debby: "dua",
+      jason: "931"
+    };
 
     function initForUser(user){
       userRef = db.ref(`users/${user}/records`);
-      document.getElementById('roleSelect').value = user; 
+      document.getElementById('roleSelect').value = user;
       pfRef = db.ref(`users/${user}/portfolio`);
       loadRecentRecords();
       updateStats();
       loadPortfolio();
+      loadFavorites();
+
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+      const today = new Date().toISOString().split('T')[0];
+      startDateInput.value = startDateInput.value || firstDay;
+      endDateInput.value = endDateInput.value || today;
+
+      db.ref(`users/${user}/profile/salary`).get().then(snap=>{
+        if (snap.exists()) {
+          salaryInput.value = snap.val();
+          salaryStatus.textContent = `已載入：${snap.val()} 元`;
+        } else {
+          const saved = localStorage.getItem(`${user}_salary`);
+          if (saved) {
+            salaryInput.value = saved;
+            salaryStatus.textContent = `已載入上次設定：${saved} 元`;
+          } else {
+            salaryStatus.textContent = '';
+          }
+        }
+      }).catch(e=>{
+        const saved = localStorage.getItem(`${user}_salary`);
+        if (saved) {
+          salaryInput.value = saved;
+          salaryStatus.textContent = `已載入上次設定：${saved} 元`;
+        }
+      });
+
+      const limits = JSON.parse(localStorage.getItem(`${user}_limits`) || '{}');
+      for (const key of ['food', 'transport', 'entertainment', 'other']) {
+        if (limits[key]) {
+          const el = document.getElementById(`limit_${key}`);
+          if (el) el.value = limits[key];
+        }
+      }
     }
 
     function deleteRecord(key) {
@@ -311,11 +381,12 @@
           console.error(err);
         } else {
           alert("已刪除紀錄！");
-          loadRecentRecords(); 
-          updateStats();   
+          loadRecentRecords();
+          updateStats();
         }
       });
     }
+
     const boardRef = db.ref("family/board");
 
     function loadBoard() {
@@ -382,7 +453,7 @@
               price = parseFloat(last[6].replace(/,/g, ""));
             }
             const gain = ((price - info.cost) * info.shares).toFixed(2);
-            const color = gain >= 0 ? "red" : "green"; 
+            const color = gain >= 0 ? "red" : "green";
             const li = document.createElement("li");
             li.innerHTML = `
               <b>${code}</b>｜${info.shares}股｜成本 ${info.cost}｜現價 ${price.toFixed(2)}｜
@@ -399,26 +470,19 @@
     }
 
     function addPortfolio() {
-      const code = pfSymbol.value.trim();
-      const shares = parseFloat(pfShares.value);
-      const cost = parseFloat(pfCost.value);
+      const code = document.getElementById('pfSymbol').value.trim();
+      const shares = parseFloat(document.getElementById('pfShares').value);
+      const cost = parseFloat(document.getElementById('pfCost').value);
       if (!code || isNaN(shares) || isNaN(cost)) return alert("請輸入完整資料");
       pfRef.child(code).set({ shares, cost });
-      pfSymbol.value = pfShares.value = pfCost.value = "";
+      document.getElementById('pfSymbol').value = document.getElementById('pfShares').value = document.getElementById('pfCost').value = "";
     }
 
     function removePortfolio(code) {
       if (confirm("確定刪除這筆投資？")) pfRef.child(code).remove();
     }
 
-    const USERS = {
-  mom: "me",
-  dad: "dt",
-  debby: "dua",
-  jason: "931"
-};
-
-    function logout() {
+    async function logout() {
       localStorage.removeItem('currentUser');
       document.getElementById('mainContent').style.display = 'none';
       document.getElementById('loginSection').style.display = 'block';
@@ -430,6 +494,7 @@
       warningMsg.textContent = '';
       alert('您已登出！');
     }
+
     async function changePassword() {
       const user = localStorage.getItem('currentUser');
       if (!user) return alert("請先登入");
@@ -452,7 +517,7 @@
       }
 
       await db.ref(`users/${user}/password`).set(newPass);
-      USERS[user] = newPass; 
+      USERS[user] = newPass;
       localStorage.setItem('lastChangedPass', newPass);
 
       alert("✅ 密碼修改成功，下次登入請使用新密碼！");
@@ -476,13 +541,14 @@
         localStorage.setItem('currentUser', user);
         alert(`歡迎回來，${user}!`);
         document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block'; 
+        document.getElementById('mainContent').style.display = 'block';
         initForUser(user);
       } else {
         alert("密碼錯誤！");
         document.getElementById('loginPassword').value = "";
       }
     }
+
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
       document.body.classList.add(`theme-${mode}`);
@@ -510,6 +576,7 @@
     }
 
     function loadRecentRecords(){
+      if (!userRef) return;
       userRef.orderByChild('timestamp').limitToLast(20).once('value', snap => {
         const records = snap.val(), list = recordList;
         list.innerHTML = '';
@@ -532,34 +599,55 @@
       });
     }
 
-
     async function updateStats(){
+      if (!userRef) {
+        todayTotalEl.textContent = '0';
+        avg7Days.textContent = '0';
+        avg30Days.textContent = '0';
+        monthTotalEl.textContent = '0';
+        warningMsg.textContent = '';
+        return;
+      }
       const snap=await userRef.once('value');
-      const arr=Object.values(snap.val()||[]);
-      if (arr.length === 0) return;
-      
+      const arrRaw = snap.val() || {};
+      const arr = Object.values(arrRaw);
+      const now=Date.now(),day=86400000;
+
       const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
         .toISOString()
         .slice(0, 10);
 
-      const now=Date.now(),day=86400000;
-      const todayTotal=arr.filter(r=>r.date===today).reduce((s,r)=>s+r.amount,0);
-      const arr7=arr.filter(r=>now-r.timestamp<7*day);
+      if (arr.length === 0) {
+        todayTotalEl.textContent = '0.00';
+        avg7Days.textContent = '0.00';
+        avg30Days.textContent = '0.00';
+        monthTotalEl.textContent = '0.00';
+        warningMsg.textContent = '';
+        return;
+      }
+
+      const todayTotal = arr.filter(r=>r.date===today).reduce((s,r)=>s+ (parseFloat(r.amount)||0),0);
+      const arr7=arr.filter(r=>now - r.timestamp < 7*day);
       const arr30 = arr.filter(r => now - r.timestamp < 30*day);
-      
-      const avg7 = +(arr7.reduce((s,r)=>s+r.amount,0)/7).toFixed(2);
-      const avg30 = +(arr30.reduce((s,r)=>s+r.amount,0)/30).toFixed(2);
-      const month=today.slice(0,7);
-      const monthTotal=arr.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s+r.amount,0);
-      warningMsg.textContent=todayTotal>1000?"⚠️ 今日花太多啦！":"";
-      todayTotalEl.textContent=todayTotal.toFixed(2);
+
+      const sum7 = arr7.reduce((s,r)=>s + (parseFloat(r.amount)||0),0);
+      const sum30 = arr30.reduce((s,r)=>s + (parseFloat(r.amount)||0),0);
+
+      const avg7 = +(sum7 / 7);
+      const avg30 = +(sum30 / 30);
+      const month = today.slice(0,7);
+      const monthTotal = arr.filter(r=>r.date.startsWith(month)).reduce((s,r)=>s + (parseFloat(r.amount)||0),0);
+
+      warningMsg.textContent = todayTotal > 1000 ? "⚠️ 今日花太多啦！" : "";
+      todayTotalEl.textContent = todayTotal.toFixed(2);
       avg7Days.textContent = avg7.toFixed(2);
       avg30Days.textContent = avg30.toFixed(2);
       monthTotalEl.textContent = monthTotal.toFixed(2);
     }
+
     function analyzeCategory() {
-      const start = document.getElementById('startDate').value;
-      const end = document.getElementById('endDate').value;
+      const start = startDateInput.value;
+      const end = endDateInput.value;
 
       if (!start || !end) {
         alert('請選擇完整的起訖日期');
@@ -583,7 +671,7 @@
       }
       const categoryMap = {};
       filtered.forEach(r => {
-        categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
+        categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
       });
 
       const categories = Object.keys(categoryMap);
@@ -626,144 +714,157 @@
       });
     });
   }
-function saveSalary() {
-  const salary = parseFloat(document.getElementById('salaryInput').value);
-  if (isNaN(salary) || salary <= 0) {
-    alert('請輸入有效的月薪金額');
-    return;
-  }
-  const currentUser = localStorage.getItem('currentUser');
-  localStorage.setItem(`${currentUser}_salary`, salary);
-  document.getElementById('salaryStatus').textContent = `已儲存：${salary} 元`;
-}
 
-function saveLimits() {
-  const limits = {
-    food: parseFloat(document.getElementById('limit_food').value),
-    transport: parseFloat(document.getElementById('limit_transport').value),
-    entertainment: parseFloat(document.getElementById('limit_entertainment').value),
-    other: parseFloat(document.getElementById('limit_other').value)
-  };
-  const currentUser = localStorage.getItem('currentUser');
-  localStorage.setItem(`${currentUser}_limits`, JSON.stringify(limits));
-  alert('已儲存自訂支出比例設定！');
-}
-
-let financeChart; 
-
-function analyzeFinance() {
-  const salary = parseFloat(document.getElementById('salaryInput').value);
-  if (isNaN(salary) || salary <= 0) {
-    alert('請輸入有效的月薪金額');
-    return;
-  }
-  const currentUser = localStorage.getItem('currentUser'); 
-  const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}'); 
-  const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
-  const mergedLimits = { ...limitDefaults, ...limits };
-
-  userRef.once('value').then(snap => {
-    const records = Object.values(snap.val() || []);
-    if (records.length === 0) {
-      document.getElementById('financeAdvice').textContent = '暫無支出資料';
+  function saveSalary() {
+    const salary = parseFloat(salaryInput.value);
+    if (isNaN(salary) || salary <= 0) {
+      alert('請輸入有效的月薪金額');
       return;
     }
+    const currentUser = localStorage.getItem("currentUser");
+    if (!currentUser) { alert('請先登入'); return; }
+    localStorage.setItem(`${currentUser}_salary`, salary);
+    db.ref(`users/${currentUser}/profile/salary`).set(salary).catch(e=>console.error(e));
+    salaryStatus.textContent = `已儲存：${salary} 元`;
+  }
 
-    const now = new Date();
-    const thisMonth = now.toISOString().slice(0, 7); 
-    const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
+  function saveLimits() {
+    const limits = {
+      food: parseFloat(document.getElementById('limit_food').value),
+      transport: parseFloat(document.getElementById('limit_transport').value),
+      entertainment: parseFloat(document.getElementById('limit_entertainment').value),
+      other: parseFloat(document.getElementById('limit_other').value)
+    };
+    const currentUser = localStorage.getItem('currentUser');
+    if (!currentUser) { alert('請先登入'); return; }
+    localStorage.setItem(`${currentUser}_limits`, JSON.stringify(limits));
+    alert('已儲存自訂支出比例設定！');
+  }
 
-    if (monthRecords.length === 0) {
-      document.getElementById('financeAdvice').textContent = `本月（${thisMonth}）尚無記帳資料`;
+  let financeChart;
+
+  function analyzeFinance() {
+    const salary = parseFloat(salaryInput.value);
+    if (isNaN(salary) || salary <= 0) {
+      alert('請輸入有效的月薪金額');
       return;
     }
+    const currentUser = localStorage.getItem('currentUser');
+    const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
+    const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
+    const mergedLimits = { ...limitDefaults, ...limits };
 
-    const total = monthRecords.reduce((sum, r) => sum + r.amount, 0);
-    const categoryMap = {};
-    monthRecords.forEach(r => {
-      categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
-    });
-
-    let adviceText = `<p>📅 本月(${thisMonth})總支出：${total.toFixed(2)} 元（${(total/salary*100).toFixed(1)}% 月薪）</p><ul>`;
-    for (const [cat, amt] of Object.entries(categoryMap)) {
-      const pct = amt / salary * 100;
-      let limit = mergedLimits.other;
-      if (cat === '食物') limit = mergedLimits.food;
-      else if (cat === '交通') limit = mergedLimits.transport;
-      else if (cat === '娛樂') limit = mergedLimits.entertainment;
-
-      let msg = "";
-      if (pct > limit) msg = `⚠️ 超出建議 ${limit}% 上限，建議檢視支出。`;
-      else if (pct > limit * 0.8) msg = `⚠️ 接近上限 (${limit}%)，請留意控制。`;
-      else msg = `✅ 在合理範圍內。`;
-
-      adviceText += `<li>${cat}：${amt.toFixed(2)} 元（${pct.toFixed(1)}%）→ ${msg}</li>`;
-    }
-    adviceText += "</ul>";
-
-    if (total > salary * 0.9)
-      adviceText += `<p style="color:red;font-weight:bold;">🚨 本月支出已達月薪 90%，請立即檢視開銷！</p>`;
-    else if (total < salary * 0.6)
-      adviceText += `<p style="color:green;">🌱 儲蓄比例超過 40%，持續保持！</p>`;
-
-    document.getElementById('financeAdvice').innerHTML = adviceText;
-
-    const ctx = document.getElementById('financeChart').getContext('2d');
-    if (financeChart) financeChart.destroy();
-    financeChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: Object.keys(categoryMap),
-        datasets: [{
-          data: Object.values(categoryMap),
-          backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0']
-        }]
-      },
-      options: {
-        plugins: {
-          title: { display: true, text: `各類支出佔比（共 ${total.toFixed(0)} 元）` },
-          legend: { position: 'bottom' }
-        }
+    userRef.once('value').then(snap => {
+      const records = Object.values(snap.val() || []);
+      if (records.length === 0) {
+        document.getElementById('financeAdvice').textContent = '暫無支出資料';
+        return;
       }
+
+      const now = new Date();
+      const thisMonth = now.toISOString().slice(0, 7);
+      const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
+
+      if (monthRecords.length === 0) {
+        document.getElementById('financeAdvice').textContent = `本月（${thisMonth}）尚無記帳資料`;
+        return;
+      }
+
+      const total = monthRecords.reduce((sum, r) => sum + (parseFloat(r.amount)||0), 0);
+      const categoryMap = {};
+      monthRecords.forEach(r => {
+        categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
+      });
+
+      let adviceText = `<p>📅 本月(${thisMonth})總支出：${total.toFixed(2)} 元（${(total/salary*100).toFixed(1)}% 月薪）</p><ul>`;
+      for (const [cat, amt] of Object.entries(categoryMap)) {
+        const pct = amt / salary * 100;
+        let limit = mergedLimits.other;
+        if (cat === '食物') limit = mergedLimits.food;
+        else if (cat === '交通') limit = mergedLimits.transport;
+        else if (cat === '娛樂') limit = mergedLimits.entertainment;
+
+        let msg = "";
+        if (pct > limit) msg = `⚠️ 超出建議 ${limit}% 上限，建議檢視支出。`;
+        else if (pct > limit * 0.8) msg = `⚠️ 接近上限 (${limit}%)，請留意控制。`;
+        else msg = `✅ 在合理範圍內。`;
+
+        adviceText += `<li>${cat}：${amt.toFixed(2)} 元（${pct.toFixed(1)}%）→ ${msg}</li>`;
+      }
+      adviceText += "</ul>";
+
+      if (total > salary * 0.9)
+        adviceText += `<p style="color:red;font-weight:bold;">🚨 本月支出已達月薪 90%，請立即檢視開銷！</p>`;
+      else if (total < salary * 0.6)
+        adviceText += `<p style="color:green;">🌱 儲蓄比例超過 40%，持續保持！</p>`;
+
+      document.getElementById('financeAdvice').innerHTML = adviceText;
+
+      const ctx = document.getElementById('financeChart').getContext('2d');
+      if (financeChart) financeChart.destroy();
+      financeChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(categoryMap),
+          datasets: [{
+            data: Object.values(categoryMap),
+            backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0']
+          }]
+        },
+        options: {
+          plugins: {
+            title: { display: true, text: `各類支出佔比（共 ${total.toFixed(0)} 元）` },
+            legend: { position: 'bottom' }
+          }
+        }
+      });
     });
-  });
-}
+  }
+
     async function loadFavorites() {
-  favRef.once('value', async snap => {
-    const favs = snap.val() || {};
-    const list = favoriteList;
-    list.innerHTML = '';
-    const codes = Object.keys(favs);
-    if (codes.length === 0) {
-      favRef.update({ '2330': true, '0050': true });
-      return loadFavorites();
+      favRef.once('value', async snap => {
+        const favs = snap.val() || {};
+        const list = favoriteList;
+        list.innerHTML = '';
+        const codes = Object.keys(favs);
+        if (codes.length === 0) {
+          favRef.update({ '2330': true, '0050': true });
+          return loadFavorites();
+        }
+
+        for (const code of codes) {
+          try {
+            const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+            const data = await res.json();
+            if (data.stat === "OK" && data.data.length > 1) {
+              const last = parseFloat(data.data[data.data.length - 1][6].replace(/,/g, ""));
+              const prev = parseFloat(data.data[data.data.length - 2][6].replace(/,/g, ""));
+              const diff = (last - prev).toFixed(2);
+              const color = diff >= 0 ? "red" : "green";
+              const li = document.createElement('li');
+              li.innerHTML = `${code} <span style="color:${color};">(${diff >= 0 ? '▲' : '▼'}${Math.abs(diff)})</span>`;
+              li.addEventListener('click', () => { symbolInput.value = code; loadStock(); });
+              list.appendChild(li);
+            } else {
+              const li = document.createElement('li');
+              li.textContent = code + '（無資料）';
+              list.appendChild(li);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        }
+      });
     }
 
-    for (const code of codes) {
-      try {
-        const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
-        const data = await res.json();
-        if (data.stat === "OK" && data.data.length > 1) {
-          const last = parseFloat(data.data[data.data.length - 1][6].replace(/,/g, ""));
-          const prev = parseFloat(data.data[data.data.length - 2][6].replace(/,/g, ""));
-          const diff = (last - prev).toFixed(2);
-          const color = diff >= 0 ? "red" : "green";
-          const li = document.createElement('li');
-          li.innerHTML = `${code} <span style="color:${color};">(${diff >= 0 ? '▲' : '▼'}${Math.abs(diff)})</span>`;
-          li.addEventListener('click', () => { symbolInput.value = code; loadStock(); });
-          list.appendChild(li);
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-  });
-}
     function addFavorite(){
       const code=newFavorite.value.trim();
       if(!code.match(/^\d+$/)){alert('請輸入有效代碼');return;}
-      favRef.update({[code]:true});newFavorite.value='';loadFavorites();
+      favRef.update({[code]:true});
+      newFavorite.value='';
+      loadFavorites();
     }
+
     const chartCtx=document.getElementById('chart').getContext('2d');
     let stockChart=null;
     async function loadStock(){
@@ -773,17 +874,17 @@ function analyzeFinance() {
         const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${symbol}`);
         const data = await res.json();
         console.log("TWSE 回傳：", data);
-        
+
         if (data.stat !== "OK" || !data.data) {
           alert('查詢失敗（代碼錯誤或暫無資料）');
           return;
         }
         const labels = data.data.map(row => {
           const parts = row[0].split('/');
-          const year = parseInt(parts[0]) + 1911; 
+          const year = parseInt(parts[0]) + 1911;
           return `${year}-${parts[1]}-${parts[2]}`;
-        });
-        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, '')));
+        }).reverse();
+        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, ''))).reverse();
         if (stockChart) stockChart.destroy();
         stockChart = new Chart(chartCtx, {
           type: 'line',
@@ -814,6 +915,7 @@ function analyzeFinance() {
         alert('股票查詢失敗（請檢查網路或 API 狀態）');
       }
     }
+
 window.addEventListener('load', () => {
   const currentUser = localStorage.getItem('currentUser');
 
@@ -823,35 +925,41 @@ window.addEventListener('load', () => {
     document.getElementById('roleSelect').value = currentUser;
     document.getElementById('loginSection').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
-    loadRecentRecords();
-    updateStats();
-    loadPortfolio();
-    loadFavorites();
+    initForUser(currentUser);
   } else {
     document.getElementById('loginSection').style.display = 'block';
     document.getElementById('mainContent').style.display = 'none';
   }
 
   const today = new Date().toISOString().split('T')[0];
-  document.getElementById('recordDate').value = today;
+  if (document.getElementById('recordDate')) document.getElementById('recordDate').value = today;
 
   if (currentUser) {
     const savedSalary = localStorage.getItem(`${currentUser}_salary`);
-    if (savedSalary) {
-      document.getElementById('salaryInput').value = savedSalary;
-      document.getElementById('salaryStatus').textContent = `已載入上次設定：${savedSalary} 元`;
+    if (savedSalary && !salaryInput.value) {
+      salaryInput.value = savedSalary;
+      salaryStatus.textContent = `已載入上次設定：${savedSalary} 元`;
     }
 
     const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
     for (const key of ['food', 'transport', 'entertainment', 'other']) {
-      if (limits[key]) document.getElementById(`limit_${key}`).value = limits[key];
+      if (limits[key]) {
+        const el = document.getElementById(`limit_${key}`);
+        if (el) el.value = limits[key];
+      }
     }
   }
 
-  const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+  loadFavorites();
+  if (symbolInput.value && symbolInput.value.trim().length>0) {
+    setTimeout(()=>{ 
+      try { loadStock(); } catch(e){ console.error(e); }
+    }, 300);
+  }
 
-  loadMessages();
+  const savedTheme = localStorage.getItem('themeMode');
+  if (savedTheme) setTheme(savedTheme);
+
   console.log("✅ 初始化完成");
 });
 
@@ -859,8 +967,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
     .then(() => console.log("✅ Service Worker 註冊完成"))
     .catch(err => console.error("❌ SW 註冊失敗", err));
-}
-
+  }
   </script>
 </body>
 </html>
