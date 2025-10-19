@@ -133,6 +133,17 @@
         <button onclick="postMessage()">發佈留言</button>
       </div>
     </section>
+    <section class="container">
+      <h2>🤖 小豬 AI 助手</h2>
+      <div id="chatBox" style="background:#fff; border-radius:8px; padding:10px; height:300px; overflow-y:auto; box-shadow:inset 0 0 5px #ccc;">
+        <div style="color:#777;">👋 哈囉，我是小豬 AI 助手！有什麼想問的嗎？</div>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:10px;">
+        <input id="userInput" placeholder="輸入你的問題..." style="flex:1;">
+        <button onclick="sendMessage()">送出</button>
+      </div>
+    </section>
+
     <h3>🧩 新電影區 https://www.movieffm.net/home/</h3>
     <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 600px;">
       <iframe src="https://www.movieffm.net/home/"
@@ -388,10 +399,10 @@
     }
 
     const USERS = {
-  mom: "mom",
-  dad: "dad",
-  debby: "debby",
-  jason: "930352"
+  mom: "me",
+  dad: "dt",
+  debby: "dua",
+  jason: "931"
 };
 
     function logout() {
@@ -646,6 +657,48 @@
       if(!code.match(/^\d+$/)){alert('請輸入有效代碼');return;}
       favRef.update({[code]:true});newFavorite.value='';loadFavorites();
     }
+async function sendMessage() {
+  const input = document.getElementById('userInput');
+  const chatBox = document.getElementById('chatBox');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const userMsg = document.createElement('div');
+  userMsg.innerHTML = `<b>你：</b> ${text}`;
+  chatBox.appendChild(userMsg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  input.value = '';
+
+  const aiMsg = document.createElement('div');
+  aiMsg.innerHTML = `<i>🤖 小豬思考中...</i>`;
+  chatBox.appendChild(aiMsg);
+  chatBox.scrollTop = chatBox.scrollHeight;
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "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"
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content: text }]
+      })
+    });
+
+    const data = await response.json();
+    const reply = data.choices?.[0]?.message?.content || "抱歉，我沒聽懂 😅";
+
+    // 顯示 AI 回覆
+    aiMsg.innerHTML = `<b>小豬：</b> ${reply}`;
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+  } catch (err) {
+    console.error(err);
+    aiMsg.innerHTML = `<span style="color:red;">❌ 錯誤：無法連線 AI 伺服器</span>`;
+  }
+}
 
     const chartCtx=document.getElementById('chart').getContext('2d');
     let stockChart=null;
