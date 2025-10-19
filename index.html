@@ -195,6 +195,33 @@
       <p>當月累計支出：<span id="monthTotal">0</span> 元</p>
       <p id="warningMsg" style="color:#c0392b; font-weight:bold;"></p>
     </div>
+    <section class="container">
+  <h2>💰 智慧理財顧問</h2>
+
+  <div style="margin-bottom: 10px;">
+    <label>月薪（元）</label>
+    <input type="number" id="salaryInput" placeholder="例如 50000" />
+    <button onclick="saveSalary()">💾 儲存月薪</button>
+    <span id="salaryStatus" style="margin-left:8px;color:green;"></span>
+  </div>
+
+  <details style="margin-bottom: 15px;">
+    <summary>⚙️ 自訂各類支出建議比例（%）</summary>
+    <div style="margin-top: 8px;">
+      <label>食物：</label><input type="number" id="limit_food" value="35" style="width:60px;">%
+      <label style="margin-left:10px;">交通：</label><input type="number" id="limit_transport" value="15" style="width:60px;">%
+      <label style="margin-left:10px;">娛樂：</label><input type="number" id="limit_entertainment" value="15" style="width:60px;">%
+      <label style="margin-left:10px;">其他：</label><input type="number" id="limit_other" value="20" style="width:60px;">%
+      <button onclick="saveLimits()" style="margin-left:10px;">💾 儲存</button>
+    </div>
+  </details>
+
+  <button onclick="analyzeFinance()">📊 分析本月理財建議</button>
+  <div id="financeAdvice" class="stat-box" style="margin-top:10px;">請輸入月薪並點擊分析</div>
+
+  <canvas id="financeChart" style="margin-top:20px;max-width:400px;"></canvas>
+</section>
+
     <h3>📊 各類別支出統計</h3>
     <label>開始日期</label>
     <input type="date" id="startDate" />
@@ -287,8 +314,8 @@
           console.error(err);
         } else {
           alert("已刪除紀錄！");
-          loadRecentRecords(); // 重新載入
-          updateStats();       // 更新統計資料
+          loadRecentRecords(); 
+          updateStats();   
         }
       });
     }
@@ -609,6 +636,174 @@
       });
     });
   }
+    function analyzeFinance() {
+  const salary = parseFloat(document.getElementById('salaryInput').value);
+  if (isNaN(salary) || salary <= 0) {
+    alert('請輸入有效的月薪金額');
+    return;
+  }
+window.addEventListener('load', () => {
+  const savedSalary = localStorage.getItem('salary');
+  if (savedSalary) {
+    document.getElementById('salaryInput').value = savedSalary;
+    document.getElementById('salaryStatus').textContent = `已載入上次設定：${savedSalary} 元`;
+  }
+
+  const limits = JSON.parse(localStorage.getItem('limits') || '{}');
+  for (const key of ['food', 'transport', 'entertainment', 'other']) {
+    if (limits[key]) document.getElementById(`limit_${key}`).value = limits[key];
+  }
+});
+
+function saveSalary() {
+  const salary = parseFloat(document.getElementById('salaryInput').value);
+  if (isNaN(salary) || salary <= 0) {
+    alert('請輸入有效的月薪金額');
+    return;
+  }
+  localStorage.setItem('salary', salary);
+  document.getElementById('salaryStatus').textContent = `已儲存：${salary} 元`;
+}
+
+function saveLimits() {
+  const limits = {
+    food: parseFloat(document.getElementById('limit_food').value),
+    transport: parseFloat(document.getElementById('limit_transport').value),
+    entertainment: parseFloat(document.getElementById('limit_entertainment').value),
+    other: parseFloat(document.getElementById('limit_other').value)
+  };
+  localStorage.setItem('limits', JSON.stringify(limits));
+  alert('已儲存自訂支出比例設定！');
+}
+
+let financeChart; 
+
+function analyzeFinance() {
+  const salary = parseFloat(document.getElementById('salaryInput').value);
+  if (isNaN(salary) || salary <= 0) {
+    alert('請輸入有效的月薪金額');
+    return;
+  }
+
+  const limits = JSON.parse(localStorage.getItem('limits') || '{}');
+  const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
+  const mergedLimits = { ...limitDefaults, ...limits };
+
+  userRef.once('value').then(snap => {
+    const records = Object.values(snap.val() || []);
+    if (records.length === 0) {
+      document.getElementById('financeAdvice').textContent = '暫無支出資料';
+      return;
+    }
+
+    const now = new Date();
+    const thisMonth = now.toISOString().slice(0, 7); 
+    const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
+
+    if (monthRecords.length === 0) {
+      document.getElementById('financeAdvice').textContent = `本月（${thisMonth}）尚無記帳資料`;
+      return;
+    }
+
+    const total = monthRecords.reduce((sum, r) => sum + r.amount, 0);
+    const categoryMap = {};
+    monthRecords.forEach(r => {
+      categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
+    });
+
+    let adviceText = `<p>📅 本月(${thisMonth})總支出：${total.toFixed(2)} 元（${(total/salary*100).toFixed(1)}% 月薪）</p><ul>`;
+    for (const [cat, amt] of Object.entries(categoryMap)) {
+      const pct = amt / salary * 100;
+      let limit = mergedLimits.other;
+      if (cat === '食物') limit = mergedLimits.food;
+      else if (cat === '交通') limit = mergedLimits.transport;
+      else if (cat === '娛樂') limit = mergedLimits.entertainment;
+
+      let msg = "";
+      if (pct > limit) msg = `⚠️ 超出建議 ${limit}% 上限，建議檢視支出。`;
+      else if (pct > limit * 0.8) msg = `⚠️ 接近上限 (${limit}%)，請留意控制。`;
+      else msg = `✅ 在合理範圍內。`;
+
+      adviceText += `<li>${cat}：${amt.toFixed(2)} 元（${pct.toFixed(1)}%）→ ${msg}</li>`;
+    }
+    adviceText += "</ul>";
+
+    if (total > salary * 0.9)
+      adviceText += `<p style="color:red;font-weight:bold;">🚨 本月支出已達月薪 90%，請立即檢視開銷！</p>`;
+    else if (total < salary * 0.6)
+      adviceText += `<p style="color:green;">🌱 儲蓄比例超過 40%，持續保持！</p>`;
+
+    document.getElementById('financeAdvice').innerHTML = adviceText;
+
+    const ctx = document.getElementById('financeChart').getContext('2d');
+    if (financeChart) financeChart.destroy();
+    financeChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: Object.keys(categoryMap),
+        datasets: [{
+          data: Object.values(categoryMap),
+          backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0']
+        }]
+      },
+      options: {
+        plugins: {
+          title: { display: true, text: `各類支出佔比（共 ${total.toFixed(0)} 元）` },
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+  });
+}
+
+
+  userRef.once('value').then(snap => {
+    const records = Object.values(snap.val() || []);
+    if (records.length === 0) {
+      document.getElementById('financeAdvice').textContent = '暫無支出資料';
+      return;
+    }
+
+    const thisMonth = new Date().toISOString().slice(0,7);
+    const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
+    if (monthRecords.length === 0) {
+      document.getElementById('financeAdvice').textContent = '本月尚無記帳資料';
+      return;
+    }
+
+    const total = monthRecords.reduce((s,r)=>s+r.amount,0);
+    const categoryMap = {};
+    monthRecords.forEach(r => {
+      categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
+    });
+
+    let adviceText = `<p>本月總支出：${total.toFixed(2)} 元 (${(total/salary*100).toFixed(1)}% 的月薪)</p>`;
+    adviceText += "<ul>";
+
+    for (const [cat, amt] of Object.entries(categoryMap)) {
+      const pct = amt / salary * 100;
+      let msg = "";
+
+      if (cat === "食物" && pct > 35) msg = "🍔 食物支出偏高，試著多在家煮飯。";
+      else if (cat === "交通" && pct > 15) msg = "🚌 交通費偏高，可考慮月票或共乘。";
+      else if (cat === "娛樂" && pct > 15) msg = "🎮 娛樂支出過多，可設定娛樂預算上限。";
+      else if (cat === "其他" && pct > 20) msg = "📝 其他支出過高，可再細分檢視內容。";
+      else msg = "✅ 在合理範圍內。";
+
+      adviceText += `<li>${cat}: ${amt.toFixed(2)} 元 (${pct.toFixed(1)}%) → ${msg}</li>`;
+    }
+
+    adviceText += "</ul>";
+
+    if (total > salary * 0.9)
+      adviceText += `<p style="color:red; font-weight:bold;">⚠️ 注意：您本月支出已達月薪 90%，建議立即檢視開銷！</p>`;
+    else if (total < salary * 0.6)
+      adviceText += `<p style="color:green;">🌱 很棒！您的儲蓄比例超過 40%，持續保持！</p>`;
+
+    document.getElementById('financeAdvice').innerHTML = adviceText;
+  });
+}
+
     async function loadFavorites() {
   favRef.once('value', async snap => {
     const favs = snap.val() || {};
@@ -663,10 +858,10 @@
         }
         const labels = data.data.map(row => {
           const parts = row[0].split('/');
-          const year = parseInt(parts[0]) + 1911; // 民國轉西元
+          const year = parseInt(parts[0]) + 1911; 
           return `${year}-${parts[1]}-${parts[2]}`;
         });
-        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, ''))); // 收盤價
+        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, '')));
         if (stockChart) stockChart.destroy();
         stockChart = new Chart(chartCtx, {
           type: 'line',
