@@ -679,24 +679,23 @@ async function sendMessage() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer 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"
+        "Authorization": "Bearer sk-proj-你的key"
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o", // 改成正式版模型
         messages: [{ role: "user", content: text }]
       })
     });
 
     const data = await response.json();
-    const reply = data.choices?.[0]?.message?.content || "抱歉，我沒聽懂 😅";
+    console.log("🧠 OpenAI 回傳：", data);
 
-    // 顯示 AI 回覆
+    const reply = data.choices?.[0]?.message?.content || JSON.stringify(data, null, 2);
     aiMsg.innerHTML = `<b>小豬：</b> ${reply}`;
-    chatBox.scrollTop = chatBox.scrollHeight;
 
   } catch (err) {
-    console.error(err);
-    aiMsg.innerHTML = `<span style="color:red;">❌ 錯誤：無法連線 AI 伺服器</span>`;
+    console.error("❌ 錯誤：", err);
+    aiMsg.innerHTML = `<span style="color:red;">無法連線到 AI 伺服器</span>`;
   }
 }
 
