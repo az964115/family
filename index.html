@@ -169,7 +169,6 @@
         </select>
       </div>
     </div>
-
     <label>金額</label>
     <input type="number" id="amountInput" min="0" step="0.01" placeholder="輸入金額" />
 
@@ -178,7 +177,6 @@
 
     <button onclick="addRecord()">記錄支出</button>
     <hr>
-
 
     <hr>
 
@@ -280,7 +278,6 @@
     </section>
 
 </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
@@ -355,7 +352,6 @@
         .then(()=>alert("留言已刪除"))
         .catch(e=>console.error(e));
     }
-
     function postMessage(){
       const msg = document.getElementById("boardInput").value.trim();
       if (!msg) return alert("請輸入內容");
@@ -456,7 +452,7 @@
       }
 
       await db.ref(`users/${user}/password`).set(newPass);
-      USERS[user] = newPass; // 更新本地暫存（避免立即登出後錯誤）
+      USERS[user] = newPass; 
       localStorage.setItem('lastChangedPass', newPass);
 
       alert("✅ 密碼修改成功，下次登入請使用新密碼！");
@@ -476,9 +472,6 @@
         storedPass = USERS[user];
         await ref.set(storedPass);
       }
-
-
-
       if(pass === storedPass){
         localStorage.setItem('currentUser', user);
         alert(`歡迎回來，${user}!`);
@@ -490,9 +483,6 @@
         document.getElementById('loginPassword').value = "";
       }
     }
-
-
-
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
       document.body.classList.add(`theme-${mode}`);
@@ -636,32 +626,14 @@
       });
     });
   }
-    function analyzeFinance() {
-  const salary = parseFloat(document.getElementById('salaryInput').value);
-  if (isNaN(salary) || salary <= 0) {
-    alert('請輸入有效的月薪金額');
-    return;
-  }
-window.addEventListener('load', () => {
-  const savedSalary = localStorage.getItem('salary');
-  if (savedSalary) {
-    document.getElementById('salaryInput').value = savedSalary;
-    document.getElementById('salaryStatus').textContent = `已載入上次設定：${savedSalary} 元`;
-  }
-
-  const limits = JSON.parse(localStorage.getItem('limits') || '{}');
-  for (const key of ['food', 'transport', 'entertainment', 'other']) {
-    if (limits[key]) document.getElementById(`limit_${key}`).value = limits[key];
-  }
-});
-
 function saveSalary() {
   const salary = parseFloat(document.getElementById('salaryInput').value);
   if (isNaN(salary) || salary <= 0) {
     alert('請輸入有效的月薪金額');
     return;
   }
-  localStorage.setItem('salary', salary);
+  const currentUser = localStorage.getItem('currentUser');
+  localStorage.setItem(`${currentUser}_salary`, salary);
   document.getElementById('salaryStatus').textContent = `已儲存：${salary} 元`;
 }
 
@@ -672,7 +644,8 @@ function saveLimits() {
     entertainment: parseFloat(document.getElementById('limit_entertainment').value),
     other: parseFloat(document.getElementById('limit_other').value)
   };
-  localStorage.setItem('limits', JSON.stringify(limits));
+  const currentUser = localStorage.getItem('currentUser');
+  localStorage.setItem(`${currentUser}_limits`, JSON.stringify(limits));
   alert('已儲存自訂支出比例設定！');
 }
 
@@ -684,8 +657,8 @@ function analyzeFinance() {
     alert('請輸入有效的月薪金額');
     return;
   }
-
-  const limits = JSON.parse(localStorage.getItem('limits') || '{}');
+  const currentUser = localStorage.getItem('currentUser'); 
+  const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}'); 
   const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
   const mergedLimits = { ...limitDefaults, ...limits };
 
@@ -755,55 +728,6 @@ function analyzeFinance() {
     });
   });
 }
-
-
-  userRef.once('value').then(snap => {
-    const records = Object.values(snap.val() || []);
-    if (records.length === 0) {
-      document.getElementById('financeAdvice').textContent = '暫無支出資料';
-      return;
-    }
-
-    const thisMonth = new Date().toISOString().slice(0,7);
-    const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
-    if (monthRecords.length === 0) {
-      document.getElementById('financeAdvice').textContent = '本月尚無記帳資料';
-      return;
-    }
-
-    const total = monthRecords.reduce((s,r)=>s+r.amount,0);
-    const categoryMap = {};
-    monthRecords.forEach(r => {
-      categoryMap[r.category] = (categoryMap[r.category] || 0) + r.amount;
-    });
-
-    let adviceText = `<p>本月總支出：${total.toFixed(2)} 元 (${(total/salary*100).toFixed(1)}% 的月薪)</p>`;
-    adviceText += "<ul>";
-
-    for (const [cat, amt] of Object.entries(categoryMap)) {
-      const pct = amt / salary * 100;
-      let msg = "";
-
-      if (cat === "食物" && pct > 35) msg = "🍔 食物支出偏高，試著多在家煮飯。";
-      else if (cat === "交通" && pct > 15) msg = "🚌 交通費偏高，可考慮月票或共乘。";
-      else if (cat === "娛樂" && pct > 15) msg = "🎮 娛樂支出過多，可設定娛樂預算上限。";
-      else if (cat === "其他" && pct > 20) msg = "📝 其他支出過高，可再細分檢視內容。";
-      else msg = "✅ 在合理範圍內。";
-
-      adviceText += `<li>${cat}: ${amt.toFixed(2)} 元 (${pct.toFixed(1)}%) → ${msg}</li>`;
-    }
-
-    adviceText += "</ul>";
-
-    if (total > salary * 0.9)
-      adviceText += `<p style="color:red; font-weight:bold;">⚠️ 注意：您本月支出已達月薪 90%，建議立即檢視開銷！</p>`;
-    else if (total < salary * 0.6)
-      adviceText += `<p style="color:green;">🌱 很棒！您的儲蓄比例超過 40%，持續保持！</p>`;
-
-    document.getElementById('financeAdvice').innerHTML = adviceText;
-  });
-}
-
     async function loadFavorites() {
   favRef.once('value', async snap => {
     const favs = snap.val() || {};
@@ -835,8 +759,6 @@ function analyzeFinance() {
     }
   });
 }
-
-
     function addFavorite(){
       const code=newFavorite.value.trim();
       if(!code.match(/^\d+$/)){alert('請輸入有效代碼');return;}
@@ -892,42 +814,48 @@ function analyzeFinance() {
         alert('股票查詢失敗（請檢查網路或 API 狀態）');
       }
     }
+window.addEventListener('load', () => {
+  const currentUser = localStorage.getItem('currentUser');
 
-    window.onload=()=>{
-      const currentUser = localStorage.getItem('currentUser');
-      if (!currentUser) {
-        document.getElementById('mainContent').style.display = 'none';
-        document.getElementById('loginSection').style.display = 'block';
-      } else {
-        document.getElementById('loginSection').style.display = 'none';
-        document.getElementById('mainContent').style.display = 'block';
-        initForUser(currentUser);
-      }
-      const todayStr = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-        .toISOString()
-        .slice(0, 10);
-      const sevenDaysAgo = new Date(Date.now() - 6 * 86400000)
-        .toISOString()
-        .slice(0, 10);
-      document.getElementById('startDate').value = sevenDaysAgo;
-      document.getElementById('endDate').value = todayStr;
-      window.roleSelect = document.getElementById('roleSelect');
-      window.categorySelect = document.getElementById('categorySelect');
-      window.amountInput = document.getElementById('amountInput');
-      window.descriptionInput = document.getElementById('descriptionInput');
-      window.recordList = document.getElementById('recordList');
+  if (currentUser) {
+    userRef = db.ref(`users/${currentUser}/records`);
+    pfRef = db.ref(`users/${currentUser}/portfolio`);
+    document.getElementById('roleSelect').value = currentUser;
+    document.getElementById('loginSection').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    loadRecentRecords();
+    updateStats();
+    loadPortfolio();
+    loadFavorites();
+  } else {
+    document.getElementById('loginSection').style.display = 'block';
+    document.getElementById('mainContent').style.display = 'none';
+  }
 
-      window.todayTotalEl = document.getElementById('todayTotal');
-      window.avg7Days = document.getElementById('avg7Days');
-      window.avg30Days = document.getElementById('avg30Days');
-      window.monthTotalEl = document.getElementById('monthTotal');
-      window.warningMsg = document.getElementById('warningMsg');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('recordDate').value = today;
 
-      loadFavorites();
+  if (currentUser) {
+    const savedSalary = localStorage.getItem(`${currentUser}_salary`);
+    if (savedSalary) {
+      document.getElementById('salaryInput').value = savedSalary;
+      document.getElementById('salaryStatus').textContent = `已載入上次設定：${savedSalary} 元`;
+    }
 
-      console.log("✅ Firebase initialized and elements bound");
-    }; 
-    if ('serviceWorker' in navigator) {
+    const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
+    for (const key of ['food', 'transport', 'entertainment', 'other']) {
+      if (limits[key]) document.getElementById(`limit_${key}`).value = limits[key];
+    }
+  }
+
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') document.body.classList.add('dark-theme');
+
+  loadMessages();
+  console.log("✅ 初始化完成");
+});
+
+if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
     .then(() => console.log("✅ Service Worker 註冊完成"))
     .catch(err => console.error("❌ SW 註冊失敗", err));
