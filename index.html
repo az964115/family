@@ -282,6 +282,9 @@
       </div>
 
       <h3 style="margin-top:15px;">📋 我的持股列表</h3>
+      <div id="totalProfitSection">
+        📈 今日總損益：<span id="todayTotalProfit">0</span> 元
+      </div>
       <ul id="portfolioList"><li>暫無資料</li></ul>
     </section>
 
@@ -335,10 +338,13 @@
       updateStats();
       loadPortfolio();
       loadFavorites();
+      updateTodayProfit();
 
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+        .toISOString()
+        .split('T')[0];
       startDateInput.value = startDateInput.value || firstDay;
       endDateInput.value = endDateInput.value || today;
 
@@ -468,6 +474,27 @@
         if (list.innerHTML === "") list.innerHTML = "<li>暫無資料</li>";
       });
     }
+    async function updateTodayProfit() {
+  const snapshot = await pfRef.get();
+  const data = snapshot.val() || {};
+  let totalProfit = 0;
+
+  for (const [code, { shares, cost }] of Object.entries(data)) {
+    try {
+      const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+      const stockData = await res.json();
+      if (stockData.stat === "OK" && stockData.data.length > 0) {
+        const lastPrice = parseFloat(stockData.data[stockData.data.length - 1][6].replace(/,/g, ""));
+        const profit = (lastPrice - cost) * shares;
+        totalProfit += profit;
+      }
+    } catch (e) {
+      console.error(`無法取得 ${code} 的資料`, e);
+    }
+  }
+
+  document.getElementById("todayTotalProfit").textContent = totalProfit.toFixed(2);
+}
 
     function addPortfolio() {
       const code = document.getElementById('pfSymbol').value.trim();
@@ -820,19 +847,23 @@
       });
     });
   }
-
+  
     async function loadFavorites() {
       favRef.once('value', async snap => {
         const favs = snap.val() || {};
         const list = favoriteList;
         list.innerHTML = '';
-        const codes = Object.keys(favs);
+        const codes = [...new Set(Object.keys(favs))]; 
+        const seen = new Set(); 
         if (codes.length === 0) {
           favRef.update({ '2330': true, '0050': true });
           return loadFavorites();
         }
 
         for (const code of codes) {
+          if (seen.has(code)) continue;
+          seen.add(code);
+          
           try {
             const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
             const data = await res.json();
@@ -883,8 +914,8 @@
           const parts = row[0].split('/');
           const year = parseInt(parts[0]) + 1911;
           return `${year}-${parts[1]}-${parts[2]}`;
-        }).reverse();
-        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, ''))).reverse();
+        });
+        const prices = data.data.map(row => parseFloat(row[6].replace(/,/g, '')));
         if (stockChart) stockChart.destroy();
         stockChart = new Chart(chartCtx, {
           type: 'line',
