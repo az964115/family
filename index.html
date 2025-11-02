@@ -1046,8 +1046,6 @@ await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now
         document.getElementById('roleSelect').value = currentUser;
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
-        document.getElementById("showUrlInput").value = "";
-        loadShows();
         initForUser(currentUser);
       } else {
         document.getElementById('loginSection').style.display = 'block';
