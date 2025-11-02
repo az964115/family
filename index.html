@@ -6,6 +6,7 @@
   <meta charset="UTF-8" />
   <title>🐷豬豬e網🐷</title>
   <style>
+    /* 原樣式保留（與你上傳的檔案一致） */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0; padding: 20px;
@@ -143,14 +144,17 @@
     </section>
 
     <h3>🧩 新電影區 https://www.movieffm.net/home/</h3>
+
+    <!-- 新增：關注節目區（每位使用者自己的清單） -->
     <section class="container">
-  <h2>🎬 關注的節目</h2>
-  <div style="margin-bottom:10px;">
-    <input type="url" id="showUrlInput" placeholder="輸入節目網址，例如：https://www.movieffm.net/drama/372471/" />
-    <button onclick="addShow()">➕ 新增節目</button>
-  </div>
-  <ul id="showList"><li>尚未追蹤任何節目</li></ul>
-</section>
+      <h2>🎬 關注的節目</h2>
+      <div style="margin-bottom:10px;">
+        <input type="url" id="showUrlInput" placeholder="輸入節目網址，例如：https://www.movieffm.net/drama/372471/" />
+        <button id="addShowBtn">➕ 新增節目</button>
+        <small class="small-note">新增時會嘗試擷取該頁的標題、狀態與更新時間（公開頁面）</small>
+      </div>
+      <ul id="showList"><li>尚未追蹤任何節目</li></ul>
+    </section>
 
     <div style="overflow:hidden; border: 2px solid #f0a500; border-radius: 10px; height: 600px;">
       <iframe src="https://www.movieffm.net/home/"
@@ -299,6 +303,7 @@
 
 </div>
   <script>
+    // Firebase config (保留你原本的)
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -310,9 +315,16 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    let userRef = null;
-    let pfRef = null;
 
+    // ===== 全域變數（確保一次宣告） =====
+    let userRef = null;
+    let expenseRef = null;
+    let stockRef = null;
+    let pfRef = null;
+    let showRef = null;
+    const favRef = db.ref('favorites/stockList');
+
+    // DOM 元件快取
     const roleSelect = document.getElementById('roleSelect');
     const categorySelect = document.getElementById('categorySelect');
     const amountInput = document.getElementById('amountInput');
@@ -332,80 +344,39 @@
     const newFavorite = document.getElementById('newFavorite');
     const chartCanvas = document.getElementById('chart');
 
+    // 使用者預設密碼（包含你提供的 jason 密碼）
     const USERS = {
       mom: "me",
       dad: "dt",
       debby: "dua",
-      jason: "931"
+      jason: "930352"
     };
 
+    // ======= 初始化使用者 (請注意路徑與順序) =======
     function initForUser(user){
-      userRef = db.ref(`users/${user}/records`);
-      showRef = db.ref(`users/${user}/shows`);
+      // UI 顯示
       document.getElementById('roleSelect').value = user;
+
+      // Firebase 路徑 (確保所有需要的路徑都初始化)
+      userRef = db.ref(`users/${user}/records`);
+      expenseRef = db.ref(`users/${user}/expenses`);
+      stockRef = db.ref(`users/${user}/stocks`);
       pfRef = db.ref(`users/${user}/portfolio`);
+      showRef = db.ref(`users/${user}/shows`);
+
+      // 載入：記帳 / 統計 / 投資組合 / 自選股 / 今日損益
       loadRecentRecords();
       updateStats();
       loadPortfolio();
       loadFavorites();
       updateTodayProfit();
+
+      // 載入：關注節目（最後載入也可以）
       loadShows();
-
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-      const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-        .toISOString()
-        .split('T')[0];
-      startDateInput.value = startDateInput.value || firstDay;
-      endDateInput.value = endDateInput.value || today;
-
-      db.ref(`users/${user}/profile/salary`).get().then(snap=>{
-        if (snap.exists()) {
-          salaryInput.value = snap.val();
-          salaryStatus.textContent = `已載入：${snap.val()} 元`;
-        } else {
-          const saved = localStorage.getItem(`${user}_salary`);
-          if (saved) {
-            salaryInput.value = saved;
-            salaryStatus.textContent = `已載入上次設定：${saved} 元`;
-          } else {
-            salaryStatus.textContent = '';
-          }
-        }
-      }).catch(e=>{
-        const saved = localStorage.getItem(`${user}_salary`);
-        if (saved) {
-          salaryInput.value = saved;
-          salaryStatus.textContent = `已載入上次設定：${saved} 元`;
-        }
-      });
-
-      const limits = JSON.parse(localStorage.getItem(`${user}_limits`) || '{}');
-      for (const key of ['food', 'transport', 'entertainment', 'other']) {
-        if (limits[key]) {
-          const el = document.getElementById(`limit_${key}`);
-          if (el) el.value = limits[key];
-        }
-      }
     }
 
-    function deleteRecord(key) {
-      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
-
-      userRef.child(key).remove(err => {
-        if (err) {
-          alert("刪除失敗！");
-          console.error(err);
-        } else {
-          alert("已刪除紀錄！");
-          loadRecentRecords();
-          updateStats();
-        }
-      });
-    }
-
+    // ===== 家庭公告板 =====
     const boardRef = db.ref("family/board");
-
     function loadBoard() {
       boardRef.limitToLast(10).on("value", snap => {
         const box = document.getElementById("boardMessages");
@@ -453,6 +424,7 @@
 
     window.addEventListener("load", loadBoard);
 
+    // ===== 投資組合 =====
     function loadPortfolio() {
       if (!pfRef) return;
       pfRef.on("value", async snap => {
@@ -486,26 +458,27 @@
       });
     }
     async function updateTodayProfit() {
-  const snapshot = await pfRef.get();
-  const data = snapshot.val() || {};
-  let totalProfit = 0;
+      if (!pfRef) return;
+      const snapshot = await pfRef.get();
+      const data = snapshot.val() || {};
+      let totalProfit = 0;
 
-  for (const [code, { shares, cost }] of Object.entries(data)) {
-    try {
-      const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
-      const stockData = await res.json();
-      if (stockData.stat === "OK" && stockData.data.length > 0) {
-        const lastPrice = parseFloat(stockData.data[stockData.data.length - 1][6].replace(/,/g, ""));
-        const profit = (lastPrice - cost) * shares;
-        totalProfit += profit;
+      for (const [code, { shares, cost }] of Object.entries(data)) {
+        try {
+          const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+          const stockData = await res.json();
+          if (stockData.stat === "OK" && stockData.data.length > 0) {
+            const lastPrice = parseFloat(stockData.data[stockData.data.length - 1][6].replace(/,/g, ""));
+            const profit = (lastPrice - cost) * shares;
+            totalProfit += profit;
+          }
+        } catch (e) {
+          console.error(`無法取得 ${code} 的資料`, e);
+        }
       }
-    } catch (e) {
-      console.error(`無法取得 ${code} 的資料`, e);
-    }
-  }
 
-  document.getElementById("todayTotalProfit").textContent = totalProfit.toFixed(2);
-}
+      document.getElementById("todayTotalProfit").textContent = totalProfit.toFixed(2);
+    }
 
     function addPortfolio() {
       const code = document.getElementById('pfSymbol').value.trim();
@@ -520,6 +493,7 @@
       if (confirm("確定刪除這筆投資？")) pfRef.child(code).remove();
     }
 
+    // ===== 登出 / 修改密碼 / 登入 =====
     async function logout() {
       localStorage.removeItem('currentUser');
       document.getElementById('mainContent').style.display = 'none';
@@ -587,6 +561,7 @@
       }
     }
 
+    // ===== 主題 / UI =====
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
       document.body.classList.add(`theme-${mode}`);
@@ -594,7 +569,7 @@
     }
     setTheme(localStorage.getItem('themeMode') || 'day');
 
-    const favRef = db.ref('favorites/stockList');
+    // ===== 自選股 / 記帳 / 統計 等等 =====
 
     function addRecord(){
       const role = roleSelect.value;
@@ -634,6 +609,21 @@
             `;
             list.appendChild(li);
           });
+      });
+    }
+
+    function deleteRecord(key) {
+      if (!confirm("確定要刪除這筆紀錄嗎？")) return;
+
+      userRef.child(key).remove(err => {
+        if (err) {
+          alert("刪除失敗！");
+          console.error(err);
+        } else {
+          alert("已刪除紀錄！");
+          loadRecentRecords();
+          updateStats();
+        }
       });
     }
 
@@ -683,6 +673,7 @@
       monthTotalEl.textContent = monthTotal.toFixed(2);
     }
 
+    // 分類統計
     function analyzeCategory() {
       const start = startDateInput.value;
       const end = endDateInput.value;
@@ -696,249 +687,187 @@
         return;
       }
       userRef.once('value').then(snap => {
-      const records = Object.values(snap.val() || []);
+        const records = Object.values(snap.val() || []);
         if (records.length === 0) {
-        categoryResult.textContent = '暫無資料';
-        return;
-      }
-      const filtered = records.filter(r => r.date >= start && r.date <= end);
-      if (filtered.length === 0) {
-        categoryResult.textContent = '此區間無資料';
+          categoryResult.textContent = '暫無資料';
+          return;
+        }
+        const filtered = records.filter(r => r.date >= start && r.date <= end);
+        if (filtered.length === 0) {
+          categoryResult.textContent = '此區間無資料';
+          if (window.categoryChart) window.categoryChart.destroy();
+          return;
+        }
+        const categoryMap = {};
+        filtered.forEach(r => {
+          categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
+        });
+
+        const categories = Object.keys(categoryMap);
+        const values = categories.map(c => categoryMap[c]);
+
+        categoryResult.innerHTML = categories.map(c =>
+          `${c}: ${categoryMap[c].toFixed(2)} 元`
+        ).join('<br>');
+
         if (window.categoryChart) window.categoryChart.destroy();
-        return;
-      }
-      const categoryMap = {};
-      filtered.forEach(r => {
-        categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
-      });
-
-      const categories = Object.keys(categoryMap);
-      const values = categories.map(c => categoryMap[c]);
-
-      categoryResult.innerHTML = categories.map(c =>
-        `${c}: ${categoryMap[c].toFixed(2)} 元`
-      ).join('<br>');
-
-      if (window.categoryChart) window.categoryChart.destroy();
-      const ctx = document.getElementById('categoryChart').getContext('2d');
-      window.categoryChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: categories,
-          datasets: [{
-            label: '各類別支出總額',
-            data: values,
-            backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#9b59b6'],
-            borderRadius: 6
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { color: getComputedStyle(document.body).color }
-            },
-            x: {
-              ticks: { color: getComputedStyle(document.body).color }
-            }
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        window.categoryChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: categories,
+            datasets: [{
+              label: '各類別支出總額',
+              data: values,
+              backgroundColor: ['#f39c12', '#3498db', '#2ecc71', '#9b59b6'],
+              borderRadius: 6
+            }]
           },
-          plugins: {
-            legend: {
-              labels: { color: getComputedStyle(document.body).color }
+          options: {
+            responsive: true,
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { color: getComputedStyle(document.body).color }
+              },
+              x: {
+                ticks: { color: getComputedStyle(document.body).color }
+              }
+            },
+            plugins: {
+              legend: {
+                labels: { color: getComputedStyle(document.body).color }
+              }
             }
           }
+        });
+      });
+    }
+
+    // 理財建議
+    function saveSalary() {
+      const salary = parseFloat(salaryInput.value);
+      if (isNaN(salary) || salary <= 0) {
+        alert('請輸入有效的月薪金額');
+        return;
+      }
+      const currentUser = localStorage.getItem("currentUser");
+      if (!currentUser) { alert('請先登入'); return; }
+      localStorage.setItem(`${currentUser}_salary`, salary);
+      db.ref(`users/${currentUser}/profile/salary`).set(salary).catch(e=>console.error(e));
+      salaryStatus.textContent = `已儲存：${salary} 元`;
+    }
+
+    function saveLimits() {
+      const limits = {
+        food: parseFloat(document.getElementById('limit_food').value),
+        transport: parseFloat(document.getElementById('limit_transport').value),
+        entertainment: parseFloat(document.getElementById('limit_entertainment').value),
+        other: parseFloat(document.getElementById('limit_other').value)
+      };
+      const currentUser = localStorage.getItem('currentUser');
+      if (!currentUser) { alert('請先登入'); return; }
+      localStorage.setItem(`${currentUser}_limits`, JSON.stringify(limits));
+      alert('已儲存自訂支出比例設定！');
+    }
+
+    let financeChart;
+
+    function analyzeFinance() {
+      const salary = parseFloat(salaryInput.value);
+      if (isNaN(salary) || salary <= 0) {
+        alert('請輸入有效的月薪金額');
+        return;
+      }
+      const currentUser = localStorage.getItem('currentUser');
+      const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
+      const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
+      const mergedLimits = { ...limitDefaults, ...limits };
+
+      userRef.once('value').then(snap => {
+        const records = Object.values(snap.val() || []);
+        if (records.length === 0) {
+          document.getElementById('financeAdvice').textContent = '暫無支出資料';
+          return;
         }
-      });
-    });
-  }
 
-  function saveSalary() {
-    const salary = parseFloat(salaryInput.value);
-    if (isNaN(salary) || salary <= 0) {
-      alert('請輸入有效的月薪金額');
-      return;
-    }
-    const currentUser = localStorage.getItem("currentUser");
-    if (!currentUser) { alert('請先登入'); return; }
-    localStorage.setItem(`${currentUser}_salary`, salary);
-    db.ref(`users/${currentUser}/profile/salary`).set(salary).catch(e=>console.error(e));
-    salaryStatus.textContent = `已儲存：${salary} 元`;
-  }
+        const now = new Date();
+        const thisMonth = now.toISOString().slice(0, 7);
+        const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
 
-  function saveLimits() {
-    const limits = {
-      food: parseFloat(document.getElementById('limit_food').value),
-      transport: parseFloat(document.getElementById('limit_transport').value),
-      entertainment: parseFloat(document.getElementById('limit_entertainment').value),
-      other: parseFloat(document.getElementById('limit_other').value)
-    };
-    const currentUser = localStorage.getItem('currentUser');
-    if (!currentUser) { alert('請先登入'); return; }
-    localStorage.setItem(`${currentUser}_limits`, JSON.stringify(limits));
-    alert('已儲存自訂支出比例設定！');
-  }
+        if (monthRecords.length === 0) {
+          document.getElementById('financeAdvice').textContent = `本月（${thisMonth}）尚無記帳資料`;
+          return;
+        }
 
-  let financeChart;
+        const total = monthRecords.reduce((sum, r) => sum + (parseFloat(r.amount)||0), 0);
+        const categoryMap = {};
+        monthRecords.forEach(r => {
+          categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
+        });
 
-  function analyzeFinance() {
-    const salary = parseFloat(salaryInput.value);
-    if (isNaN(salary) || salary <= 0) {
-      alert('請輸入有效的月薪金額');
-      return;
-    }
-    const currentUser = localStorage.getItem('currentUser');
-    const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
-    const limitDefaults = { food: 35, transport: 15, entertainment: 15, other: 20 };
-    const mergedLimits = { ...limitDefaults, ...limits };
+        let adviceText = `<p>📅 本月(${thisMonth})總支出：${total.toFixed(2)} 元（${(total/salary*100).toFixed(1)}% 月薪）</p><ul>`;
+        for (const [cat, amt] of Object.entries(categoryMap)) {
+          const pct = amt / salary * 100;
+          let limit = mergedLimits.other;
+          if (cat === '食物') limit = mergedLimits.food;
+          else if (cat === '交通') limit = mergedLimits.transport;
+          else if (cat === '娛樂') limit = mergedLimits.entertainment;
 
-    userRef.once('value').then(snap => {
-      const records = Object.values(snap.val() || []);
-      if (records.length === 0) {
-        document.getElementById('financeAdvice').textContent = '暫無支出資料';
-        return;
-      }
+          let msg = "";
+          if (pct > limit) msg = `⚠️ 超出建議 ${limit}% 上限，建議檢視支出。`;
+          else if (pct > limit * 0.8) msg = `⚠️ 接近上限 (${limit}%)，請留意控制。`;
+          else msg = `✅ 在合理範圍內。`;
 
-      const now = new Date();
-      const thisMonth = now.toISOString().slice(0, 7);
-      const monthRecords = records.filter(r => r.date.startsWith(thisMonth));
+          adviceText += `<li>${cat}：${amt.toFixed(2)} 元（${pct.toFixed(1)}%）→ ${msg}</li>`;
+        }
+        adviceText += "</ul>";
 
-      if (monthRecords.length === 0) {
-        document.getElementById('financeAdvice').textContent = `本月（${thisMonth}）尚無記帳資料`;
-        return;
-      }
+        if (total > salary * 0.9)
+          adviceText += `<p style="color:red;font-weight:bold;">🚨 本月支出已達月薪 90%，請立即檢視開銷！</p>`;
+        else if (total < salary * 0.6)
+          adviceText += `<p style="color:green;">🌱 儲蓄比例超過 40%，持續保持！</p>`;
 
-      const total = monthRecords.reduce((sum, r) => sum + (parseFloat(r.amount)||0), 0);
-      const categoryMap = {};
-      monthRecords.forEach(r => {
-        categoryMap[r.category] = (categoryMap[r.category] || 0) + (parseFloat(r.amount)||0);
-      });
+        document.getElementById('financeAdvice').innerHTML = adviceText;
 
-      let adviceText = `<p>📅 本月(${thisMonth})總支出：${total.toFixed(2)} 元（${(total/salary*100).toFixed(1)}% 月薪）</p><ul>`;
-      for (const [cat, amt] of Object.entries(categoryMap)) {
-        const pct = amt / salary * 100;
-        let limit = mergedLimits.other;
-        if (cat === '食物') limit = mergedLimits.food;
-        else if (cat === '交通') limit = mergedLimits.transport;
-        else if (cat === '娛樂') limit = mergedLimits.entertainment;
-
-        let msg = "";
-        if (pct > limit) msg = `⚠️ 超出建議 ${limit}% 上限，建議檢視支出。`;
-        else if (pct > limit * 0.8) msg = `⚠️ 接近上限 (${limit}%)，請留意控制。`;
-        else msg = `✅ 在合理範圍內。`;
-
-        adviceText += `<li>${cat}：${amt.toFixed(2)} 元（${pct.toFixed(1)}%）→ ${msg}</li>`;
-      }
-      adviceText += "</ul>";
-
-      if (total > salary * 0.9)
-        adviceText += `<p style="color:red;font-weight:bold;">🚨 本月支出已達月薪 90%，請立即檢視開銷！</p>`;
-      else if (total < salary * 0.6)
-        adviceText += `<p style="color:green;">🌱 儲蓄比例超過 40%，持續保持！</p>`;
-
-      document.getElementById('financeAdvice').innerHTML = adviceText;
-
-      const ctx = document.getElementById('financeChart').getContext('2d');
-      if (financeChart) financeChart.destroy();
-      financeChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: Object.keys(categoryMap),
-          datasets: [{
-            data: Object.values(categoryMap),
-            backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0']
-          }]
-        },
-        options: {
-          plugins: {
-            title: { display: true, text: `各類支出佔比（共 ${total.toFixed(0)} 元）` },
-            legend: { position: 'bottom' }
+        const ctx = document.getElementById('financeChart').getContext('2d');
+        if (financeChart) financeChart.destroy();
+        financeChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: Object.keys(categoryMap),
+            datasets: [{
+              data: Object.values(categoryMap),
+              backgroundColor: ['#4CAF50', '#2196F3', '#FFC107', '#FF5722', '#9C27B0']
+            }]
+          },
+          options: {
+            plugins: {
+              title: { display: true, text: `各類支出佔比（共 ${total.toFixed(0)} 元）` },
+              legend: { position: 'bottom' }
+            }
           }
-        }
+        });
       });
-    });
-  }
-  
+    }
+
+    // ===== 自選股清單、加入/載入邏輯 =====
     async function loadFavorites() {
       favRef.once('value', async snap => {
         const favs = snap.val() || {};
         const list = favoriteList;
         list.innerHTML = '';
-        const codes = [...new Set(Object.keys(favs))]; 
-        const seen = new Set(); 
+        const codes = Object.keys(favs || {});
+        const seen = new Set();
         if (codes.length === 0) {
           favRef.update({ '2330': true, '0050': true });
           return loadFavorites();
         }
-        let showRef = null; 
-
-async function addShow() {
-  const url = document.getElementById("showUrlInput").value.trim();
-  if (!url.startsWith("https://www.movieffm.net/")) {
-    alert("請輸入有效的 movieffm 網址！");
-    return;
-  }
-
-  try {
-    const res = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-    const html = await res.text();
-
-    const titleMatch = html.match(/<h1>(.*?)<\/h1>/);
-    const statusMatch = html.match(/狀態：<span>(.*?)<\/span>/);
-    const updateMatch = html.match(/更新時間：<span>(.*?)<\/span>/);
-
-    const title = titleMatch ? titleMatch[1] : "未知標題";
-    const status = statusMatch ? statusMatch[1] : "未知狀態";
-    const updateTime = updateMatch ? updateMatch[1] : "未知時間";
-
-    const key = encodeURIComponent(url);
-    await showRef.child(key).set({ url, title, status, updateTime });
-
-    alert(`已新增節目：${title}`);
-    document.getElementById("showUrlInput").value = "";
-    loadShows();
-
-  } catch (err) {
-    console.error("抓取節目資料失敗：", err);
-    alert("無法讀取節目內容，請稍後再試。");
-  }
-}
-
-function loadShows() {
-  if (!showRef) return;
-  const list = document.getElementById("showList");
-  showRef.on("value", (snap) => {
-    const data = snap.val() || {};
-    list.innerHTML = "";
-
-    if (Object.keys(data).length === 0) {
-      list.innerHTML = "<li>尚未追蹤任何節目</li>";
-      return;
-    }
-
-    Object.values(data).forEach((s) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <a href="${s.url}" target="_blank" style="font-weight:bold; color:#f0a500;">${s.title}</a><br>
-        狀態：${s.status}｜更新時間：${s.updateTime}
-        <button onclick="removeShow('${encodeURIComponent(s.url)}')">🗑️ 刪除</button>
-      `;
-      list.appendChild(li);
-    });
-  });
-}
-
-function removeShow(key) {
-  if (confirm("確定要移除這個節目嗎？")) {
-    showRef.child(key).remove();
-  }
-}
-
 
         for (const code of codes) {
           if (seen.has(code)) continue;
           seen.add(code);
-          
+
           try {
             const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
             const data = await res.json();
@@ -1022,58 +951,144 @@ function removeShow(key) {
       }
     }
 
-window.addEventListener('load', () => {
-  const currentUser = localStorage.getItem('currentUser');
+    // ===== 新增的：關注節目（每位使用者） =====
+    // 使用 allorigins 作為 CORS 代理抓公開頁面的 HTML
+    async function addShow() {
+      if (!showRef) return alert("請先登入");
+      const url = document.getElementById("showUrlInput").value.trim();
+      if (!url || !url.startsWith("https://www.movieffm.net/")) {
+        alert("請輸入有效的 movieffm 網址！");
+        return;
+      }
 
-  if (currentUser) {
-    userRef = db.ref(`users/${currentUser}/records`);
-    pfRef = db.ref(`users/${currentUser}/portfolio`);
-    document.getElementById('roleSelect').value = currentUser;
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-    initForUser(currentUser);
-  } else {
-    document.getElementById('loginSection').style.display = 'block';
-    document.getElementById('mainContent').style.display = 'none';
-  }
+      try {
+        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+        const res = await fetch(proxy);
+        if (!res.ok) throw new Error("抓取失敗");
+        const html = await res.text();
 
-  const today = new Date().toISOString().split('T')[0];
-  if (document.getElementById('recordDate')) document.getElementById('recordDate').value = today;
+        // 嘗試抓取 h1 與狀態 / 更新時間（容錯）
+        const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+        const statusMatch = html.match(/狀態：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
+        const updateMatch = html.match(/更新時間：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
 
-  if (currentUser) {
-    const savedSalary = localStorage.getItem(`${currentUser}_salary`);
-    if (savedSalary && !salaryInput.value) {
-      salaryInput.value = savedSalary;
-      salaryStatus.textContent = `已載入上次設定：${savedSalary} 元`;
-    }
+        const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g,'').trim() : "未知標題";
+        const status = statusMatch ? statusMatch[1].replace(/<[^>]+>/g,'').trim() : "未知狀態";
+        const updateTime = updateMatch ? updateMatch[1].replace(/<[^>]+>/g,'').trim() : "未知時間";
 
-    const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
-    for (const key of ['food', 'transport', 'entertainment', 'other']) {
-      if (limits[key]) {
-        const el = document.getElementById(`limit_${key}`);
-        if (el) el.value = limits[key];
+        const key = encodeURIComponent(url);
+        await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
+
+        document.getElementById("showUrlInput").value = "";
+        loadShows();
+      } catch (err) {
+        console.error("抓取節目資料失敗：", err);
+        alert("無法讀取節目內容，請稍後或檢查網址是否正確。");
       }
     }
-  }
 
-  loadFavorites();
-  if (symbolInput.value && symbolInput.value.trim().length>0) {
-    setTimeout(()=>{ 
-      try { loadStock(); } catch(e){ console.error(e); }
-    }, 300);
-  }
+    function loadShows() {
+      if (!showRef) return;
+      const list = document.getElementById("showList");
+      showRef.on("value", (snap) => {
+        const data = snap.val() || {};
+        list.innerHTML = "";
+        const keys = Object.keys(data);
+        if (keys.length === 0) {
+          list.innerHTML = "<li>尚未追蹤任何節目</li>";
+          return;
+        }
+        // 依加入時間排序（若有）
+        const items = Object.entries(data).sort((a,b)=>{
+          const aa = a[1].addedAt||0;
+          const bb = b[1].addedAt||0;
+          return bb - aa;
+        });
+        items.forEach(([k, s]) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="max-width:78%;">
+                <a href="${s.url}" target="_blank" style="font-weight:bold; color:#f0a500;">${s.title || s.url}</a><br>
+                <span class="small-note">狀態：${s.status || '-'}｜更新時間：${s.updateTime || '-'}</span>
+              </div>
+              <div>
+                <button onclick="removeShow('${encodeURIComponent(s.url)}')">🗑️ 刪除</button>
+              </div>
+            </div>
+          `;
+          list.appendChild(li);
+        });
+      });
+    }
 
-  const savedTheme = localStorage.getItem('themeMode');
-  if (savedTheme) setTheme(savedTheme);
+    function removeShow(key) {
+      if (!showRef) return;
+      if (confirm("確定要移除這個節目嗎？")) {
+        showRef.child(key).remove();
+      }
+    }
 
-  console.log("✅ 初始化完成");
-});
+    // 綁定按鈕（避免重複宣告 onclick 屬性）
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'addShowBtn') {
+        addShow();
+      }
+    });
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log("✅ Service Worker 註冊完成"))
-    .catch(err => console.error("❌ SW 註冊失敗", err));
-  }
+    // ===== 頁面啟動初始化 =====
+    window.addEventListener('load', () => {
+      const currentUser = localStorage.getItem('currentUser');
+
+      if (currentUser) {
+        userRef = db.ref(`users/${currentUser}/records`);
+        pfRef = db.ref(`users/${currentUser}/portfolio`);
+        document.getElementById('roleSelect').value = currentUser;
+        document.getElementById('loginSection').style.display = 'none';
+        document.getElementById('mainContent').style.display = 'block';
+        initForUser(currentUser);
+      } else {
+        document.getElementById('loginSection').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+      if (document.getElementById('recordDate')) document.getElementById('recordDate').value = today;
+
+      if (currentUser) {
+        const savedSalary = localStorage.getItem(`${currentUser}_salary`);
+        if (savedSalary && !salaryInput.value) {
+          salaryInput.value = savedSalary;
+          salaryStatus.textContent = `已載入上次設定：${savedSalary} 元`;
+        }
+
+        const limits = JSON.parse(localStorage.getItem(`${currentUser}_limits`) || '{}');
+        for (const key of ['food', 'transport', 'entertainment', 'other']) {
+          if (limits[key]) {
+            const el = document.getElementById(`limit_${key}`);
+            if (el) el.value = limits[key];
+          }
+        }
+      }
+
+      loadFavorites();
+      if (symbolInput.value && symbolInput.value.trim().length>0) {
+        setTimeout(()=>{ 
+          try { loadStock(); } catch(e){ console.error(e); }
+        }, 300);
+      }
+
+      const savedTheme = localStorage.getItem('themeMode');
+      if (savedTheme) setTheme(savedTheme);
+
+      console.log("✅ 初始化完成");
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log("✅ Service Worker 註冊完成"))
+        .catch(err => console.error("❌ SW 註冊失敗", err));
+    }
   </script>
 </body>
 </html>
