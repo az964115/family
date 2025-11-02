@@ -972,13 +972,13 @@ document.getElementById('endDate').value = today;
 
         const user = localStorage.getItem("currentUser");
         const showRef = db.ref(`users/${user}/shows`);
-        const key = encodeURIComponent(url);
-
-        await showRef.child(key).set({
+        const key = btoa(url); 
+        await showRef.push({
           url,
           title,
           addedAt: Date.now()
         });
+
 
         document.getElementById("showUrlInput").value = "";
         loadShows();
