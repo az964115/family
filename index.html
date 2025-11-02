@@ -953,40 +953,48 @@ document.getElementById('endDate').value = today;
       }
     }
 
-    async function addShow() {
-      const url = document.getElementById("showUrlInput").value.trim();
-      if (!url) return alert("請輸入網址");
+async function addShow() {
+  const url = document.getElementById("showUrlInput").value.trim();
+  if (!url) return alert("請輸入節目網址");
 
-      const dramaIdMatch = url.match(/drama\/(\d+)/);
-      if (!dramaIdMatch) return alert("網址格式不正確");
-      const dramaId = dramaIdMatch[1];
+  const dramaMatch = url.match(/drama\/(\d+)/);
+  if (!dramaMatch) return alert("網址格式不正確");
+  const dramaId = dramaMatch[1];
 
-      try {
-        const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
-        const response = await fetch(proxyUrl);
-        const data = await response.json();
-        const html = await response.text();
+  try {
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://www.movieffm.net/drama/${dramaId}/`)}`;
+    const response = await fetch(proxyUrl);
 
-        const match = html.match(/<title>(.*?)<\/title>/i);
-        const title = match ? match[1].replace(/- MovieFFM.*/i, '').trim() : "未知節目";
+    if (!response.ok) throw new Error(`Proxy 請求失敗：${response.status}`);
+    const html = await response.text();
 
-        const user = localStorage.getItem("currentUser");
-        const showRef = db.ref(`users/${user}/shows`);
-        const key = btoa(url); 
-        await showRef.push({
-          url,
-          title,
-          addedAt: Date.now()
-        });
-
-
-        document.getElementById("showUrlInput").value = "";
-        loadShows();
-      } catch (err) {
-        console.error("addShow error:", err);
-        alert("無法讀取節目內容，請稍後或檢查網址是否正確。");
-      }
+    let title = "未知節目";
+    const match = html.match(/<title>(.*?)<\/title>/i);
+    if (match) {
+      title = match[1].replace(/- MovieFFM.*/i, "").trim();
     }
+
+    const user = localStorage.getItem("currentUser");
+    if (!user) return alert("請先登入");
+
+    const showRef = db.ref(`users/${user}/shows`);
+    const key = btoa(url); 
+
+    await showRef.child(key).set({
+      url,
+      title,
+      addedAt: Date.now(),
+    });
+
+    document.getElementById("showUrlInput").value = "";
+    loadShows();
+
+  } catch (err) {
+    console.error("addShow error:", err);
+    alert("⚠️ 無法讀取節目內容（可能被網站防護擋下），請稍後再試或手動輸入節目名稱。");
+  }
+}
+
 
 
     function loadShows() {
