@@ -977,9 +977,6 @@ const status = statusMatch ? statusMatch[1] : "-";
 let updateMatch = html.match(/<meta property="article:modified_time" content="([^"]+)"/i);
 const updateTime = updateMatch ? updateMatch[1].replace('T', ' ').replace('Z', '') : "-";
 
-const key = encodeURIComponent(url);
-await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
-
 
         const key = encodeURIComponent(url);
         await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
