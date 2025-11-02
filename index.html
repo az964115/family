@@ -961,7 +961,7 @@ document.getElementById('endDate').value = today;
 
       try {
         const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const res = await fetch(`https://super-flower-fd8d.az964115.workers.dev/?url=${encodeURIComponent(url)}`);
+        const res = await fetch(`https://api.cors.lol/?url=${encodeURIComponent(url)}`);
         if (!res.ok) throw new Error("抓取失敗");
         const html = await res.text();
 
