@@ -358,7 +358,7 @@ db.ref(`users/${user}/profile/salary`).once('value').then(snap => {
   if (snap.exists()) {
     const salary = snap.val();
     document.getElementById('salaryInput').value = salary;
-    document.getElementById('salaryStatus').textContent = `已載入 Firebase 月薪：${salary} 元`;
+    document.getElementById('salaryStatus').textContent = `已載入 資料庫 月薪：${salary} 元`;
   } else {
     document.getElementById('salaryStatus').textContent = '尚未設定月薪';
   }
