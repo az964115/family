@@ -969,9 +969,21 @@ async function addShow() {
     const html = await response.text();
 
     let title = "未知節目";
-    const match = html.match(/<title>(.*?)<\/title>/i);
-    if (match) {
-      title = match[1].replace(/- MovieFFM.*/i, "").trim();
+    const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+    if (titleMatch) {
+      title = titleMatch[1].replace(/- MovieFFM.*/i, "").trim();
+    }
+
+    let status = "";
+    const statusMatch = html.match(/狀態：<span>(.*?)<\/span>/i);
+    if (statusMatch) {
+      status = statusMatch[1].trim();
+    }
+
+    let updateTime = "";
+    const timeMatch = html.match(/更新時間：<span>(.*?)<\/span>/i);
+    if (timeMatch) {
+      updateTime = timeMatch[1].trim();
     }
 
     const user = localStorage.getItem("currentUser");
@@ -983,6 +995,8 @@ async function addShow() {
     await showRef.child(key).set({
       url,
       title,
+      status,
+      updateTime,
       addedAt: Date.now(),
     });
 
@@ -994,6 +1008,7 @@ async function addShow() {
     alert("⚠️ 無法讀取節目內容（可能被網站防護擋下），請稍後再試或手動輸入節目名稱。");
   }
 }
+
 
 
 
