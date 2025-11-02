@@ -954,40 +954,40 @@ document.getElementById('endDate').value = today;
     }
 
     async function addShow() {
-      if (!showRef) return alert("請先登入");
       const url = document.getElementById("showUrlInput").value.trim();
-      if (!url || !url.startsWith("https://www.movieffm.net/")) {
-        alert("請輸入有效的 movieffm 網址！");
-        return;
-      }
+      if (!url) return alert("請輸入網址");
+
+      const dramaIdMatch = url.match(/drama\/(\d+)/);
+      if (!dramaIdMatch) return alert("網址格式不正確");
+      const dramaId = dramaIdMatch[1];
 
       try {
-        const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-const res = await fetch(`https://api.cors.lol/?url=${encodeURIComponent(url)}`);
-if (!res.ok) throw new Error("抓取失敗");
-const html = await res.text();
+        const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.movieffm.net/drama/${dramaId}/`)}`;
+        const response = await fetch(proxyUrl);
+        const data = await response.json();
+        const html = data.contents;
 
-let titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i)
-              || html.match(/<title>([^<]+)<\/title>/i);
-const title = titleMatch ? titleMatch[1].replace(/\s*-\s*Movieffm電影線上看\s*/i, '').trim() : "未知標題";
+        const match = html.match(/<title>(.*?)<\/title>/i);
+        const title = match ? match[1].replace(/- MovieFFM.*/i, '').trim() : "未知節目";
 
-let statusMatch = html.match(/更新至\s*([0-9]+)\s*集/i);
-const status = statusMatch ? statusMatch[1] : "-";
-
-let updateMatch = html.match(/<meta property="article:modified_time" content="([^"]+)"/i);
-const updateTime = updateMatch ? updateMatch[1].replace('T', ' ').replace('Z', '') : "-";
-
-
+        const user = localStorage.getItem("currentUser");
+        const showRef = db.ref(`users/${user}/shows`);
         const key = encodeURIComponent(url);
-        await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
+
+        await showRef.child(key).set({
+          url,
+          title,
+          addedAt: Date.now()
+        });
 
         document.getElementById("showUrlInput").value = "";
         loadShows();
       } catch (err) {
-        console.error("抓取節目資料失敗：", err);
+        console.error("addShow error:", err);
         alert("無法讀取節目內容，請稍後或檢查網址是否正確。");
       }
     }
+
 
     function loadShows() {
       if (!showRef) return;
