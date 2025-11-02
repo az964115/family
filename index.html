@@ -342,7 +342,6 @@
     function initForUser(user){
       userRef = db.ref(`users/${user}/records`);
       showRef = db.ref(`users/${user}/shows`);
-      loadShows();
       document.getElementById('roleSelect').value = user;
       pfRef = db.ref(`users/${user}/portfolio`);
       loadRecentRecords();
@@ -350,6 +349,7 @@
       loadPortfolio();
       loadFavorites();
       updateTodayProfit();
+      loadShows();
 
       const now = new Date();
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
