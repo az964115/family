@@ -978,9 +978,6 @@ const updateTime = updateMatch ? updateMatch[1].replace('T', ' ').replace('Z', '
 const key = encodeURIComponent(url);
 await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
 
-document.getElementById("showUrlInput").value = "";
-loadShows();
-
 
         const key = encodeURIComponent(url);
         await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
@@ -1049,6 +1046,8 @@ loadShows();
         document.getElementById('roleSelect').value = currentUser;
         document.getElementById('loginSection').style.display = 'none';
         document.getElementById('mainContent').style.display = 'block';
+        document.getElementById("showUrlInput").value = "";
+        loadShows();
         initForUser(currentUser);
       } else {
         document.getElementById('loginSection').style.display = 'block';
