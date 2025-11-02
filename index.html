@@ -354,6 +354,25 @@
       stockRef = db.ref(`users/${user}/stocks`);
       pfRef = db.ref(`users/${user}/portfolio`);
       showRef = db.ref(`users/${user}/shows`);
+db.ref(`users/${user}/profile/salary`).once('value').then(snap => {
+  if (snap.exists()) {
+    const salary = snap.val();
+    document.getElementById('salaryInput').value = salary;
+    document.getElementById('salaryStatus').textContent = `已載入 Firebase 月薪：${salary} 元`;
+  } else {
+    document.getElementById('salaryStatus').textContent = '尚未設定月薪';
+  }
+});
+const now = new Date();
+const year = now.getFullYear();
+const month = String(now.getMonth() + 1).padStart(2, '0');
+const firstDay = `${year}-${month}-01`; 
+const today = now.toISOString().split('T')[0]; 
+
+document.getElementById('startDate').value = firstDay;
+document.getElementById('endDate').value = today;
+
+      
 
       loadRecentRecords();
       updateStats();
