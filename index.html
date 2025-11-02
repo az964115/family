@@ -961,17 +961,26 @@ document.getElementById('endDate').value = today;
 
       try {
         const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const res = await fetch(`https://api.cors.lol/?url=${encodeURIComponent(url)}`);
-        if (!res.ok) throw new Error("抓取失敗");
-        const html = await res.text();
+const res = await fetch(`https://api.cors.lol/?url=${encodeURIComponent(url)}`);
+if (!res.ok) throw new Error("抓取失敗");
+const html = await res.text();
 
-        const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        const statusMatch = html.match(/狀態：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
-        const updateMatch = html.match(/更新時間：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
+let titleMatch = html.match(/<meta property="og:title" content="([^"]+)"/i)
+              || html.match(/<title>([^<]+)<\/title>/i);
+const title = titleMatch ? titleMatch[1].replace(/\s*-\s*Movieffm電影線上看\s*/i, '').trim() : "未知標題";
 
-        const title = titleMatch ? titleMatch[1].replace(/<[^>]+>/g,'').trim() : "未知標題";
-        const status = statusMatch ? statusMatch[1].replace(/<[^>]+>/g,'').trim() : "未知狀態";
-        const updateTime = updateMatch ? updateMatch[1].replace(/<[^>]+>/g,'').trim() : "未知時間";
+let statusMatch = html.match(/更新至\s*([0-9]+)\s*集/i);
+const status = statusMatch ? statusMatch[1] : "-";
+
+let updateMatch = html.match(/<meta property="article:modified_time" content="([^"]+)"/i);
+const updateTime = updateMatch ? updateMatch[1].replace('T', ' ').replace('Z', '') : "-";
+
+const key = encodeURIComponent(url);
+await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
+
+document.getElementById("showUrlInput").value = "";
+loadShows();
+
 
         const key = encodeURIComponent(url);
         await showRef.child(key).set({ url, title, status, updateTime, addedAt: Date.now() });
