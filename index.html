@@ -149,7 +149,8 @@
       <div style="margin-bottom:10px;">
         <input type="url" id="showUrlInput" placeholder="輸入節目網址，例如：https://www.movieffm.net/drama/372471/" />
         <button id="addShowBtn">➕ 新增節目</button>
-        <small class="small-note">新增時會嘗試擷取該頁的標題、狀態與更新時間（公開頁面）</small>
+        <button onclick="loadShows(true)">🔄 更新節目</button>
+        <small class="small-note">新增時會擷取該頁的標題、狀態與更新時間</small>
       </div>
       <ul id="showList"><li>尚未追蹤任何節目</li></ul>
     </section>
@@ -380,7 +381,7 @@ document.getElementById('endDate').value = today;
       loadFavorites();
       updateTodayProfit();
 
-      loadShows();
+      loadShows(true);
     }
 
     const boardRef = db.ref("family/board");
@@ -1012,11 +1013,11 @@ async function addShow() {
 
 
 
-    function loadShows() {
+    function loadShows(shouldUpdate = false) {
   if (!showRef) return;
   const list = document.getElementById("showList");
 
-  showRef.on("value", (snap) => {
+  showRef.once("value").then((snap) => {
     const data = snap.val() || {};
     list.innerHTML = "";
     const keys = Object.keys(data);
@@ -1025,12 +1026,7 @@ async function addShow() {
       return;
     }
 
-    const items = Object.entries(data).sort((a, b) => {
-      const aa = a[1].addedAt || 0;
-      const bb = b[1].addedAt || 0;
-      return bb - aa;
-    });
-
+    const items = Object.entries(data).sort((a, b) => (b[1].addedAt || 0) - (a[1].addedAt || 0));
     items.forEach(([k, s]) => {
       const li = document.createElement("li");
       li.innerHTML = `
@@ -1040,16 +1036,16 @@ async function addShow() {
             <span class="small-note">狀態：${s.status || '-'}｜更新時間：${s.updateTime || '-'}</span>
           </div>
           <div>
-            <button onclick="removeShow('${encodeURIComponent(s.url)}')">🗑️ 刪除</button>
+            <button onclick="removeShow('${btoa(s.url)}')">🗑️ 刪除</button>
           </div>
-        </div>
-      `;
+        </div>`;
       list.appendChild(li);
 
-      updateShowInfo(s.url, k);
+      if (shouldUpdate) updateShowInfo(s.url, k);
     });
   });
 }
+
 
     async function updateShowInfo(url, key) {
   const dramaMatch = url.match(/drama\/(\d+)/);
@@ -1088,11 +1084,11 @@ async function addShow() {
 
 
     function removeShow(key) {
-      if (!showRef) return;
-      if (confirm("確定要移除這個節目嗎？")) {
-        showRef.child(key).remove();
-      }
-    }
+  if (!showRef) return;
+  if (confirm("確定要移除這個節目嗎？")) {
+    showRef.child(key).remove();
+  }
+}
 
     document.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'addShowBtn') {
