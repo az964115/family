@@ -6,7 +6,6 @@
   <meta charset="UTF-8" />
   <title>🐷豬豬e網🐷</title>
   <style>
-    /* 原樣式保留（與你上傳的檔案一致） */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0; padding: 20px;
@@ -145,7 +144,6 @@
 
     <h3>🧩 新電影區 https://www.movieffm.net/home/</h3>
 
-    <!-- 新增：關注節目區（每位使用者自己的清單） -->
     <section class="container">
       <h2>🎬 關注的節目</h2>
       <div style="margin-bottom:10px;">
@@ -303,7 +301,6 @@
 
 </div>
   <script>
-    // Firebase config (保留你原本的)
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -316,7 +313,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // ===== 全域變數（確保一次宣告） =====
     let userRef = null;
     let expenseRef = null;
     let stockRef = null;
@@ -324,7 +320,6 @@
     let showRef = null;
     const favRef = db.ref('favorites/stockList');
 
-    // DOM 元件快取
     const roleSelect = document.getElementById('roleSelect');
     const categorySelect = document.getElementById('categorySelect');
     const amountInput = document.getElementById('amountInput');
@@ -344,7 +339,6 @@
     const newFavorite = document.getElementById('newFavorite');
     const chartCanvas = document.getElementById('chart');
 
-    // 使用者預設密碼（包含你提供的 jason 密碼）
     const USERS = {
       mom: "me",
       dad: "dt",
@@ -352,30 +346,24 @@
       jason: "930352"
     };
 
-    // ======= 初始化使用者 (請注意路徑與順序) =======
     function initForUser(user){
-      // UI 顯示
       document.getElementById('roleSelect').value = user;
 
-      // Firebase 路徑 (確保所有需要的路徑都初始化)
       userRef = db.ref(`users/${user}/records`);
       expenseRef = db.ref(`users/${user}/expenses`);
       stockRef = db.ref(`users/${user}/stocks`);
       pfRef = db.ref(`users/${user}/portfolio`);
       showRef = db.ref(`users/${user}/shows`);
 
-      // 載入：記帳 / 統計 / 投資組合 / 自選股 / 今日損益
       loadRecentRecords();
       updateStats();
       loadPortfolio();
       loadFavorites();
       updateTodayProfit();
 
-      // 載入：關注節目（最後載入也可以）
       loadShows();
     }
 
-    // ===== 家庭公告板 =====
     const boardRef = db.ref("family/board");
     function loadBoard() {
       boardRef.limitToLast(10).on("value", snap => {
@@ -424,7 +412,6 @@
 
     window.addEventListener("load", loadBoard);
 
-    // ===== 投資組合 =====
     function loadPortfolio() {
       if (!pfRef) return;
       pfRef.on("value", async snap => {
@@ -493,7 +480,6 @@
       if (confirm("確定刪除這筆投資？")) pfRef.child(code).remove();
     }
 
-    // ===== 登出 / 修改密碼 / 登入 =====
     async function logout() {
       localStorage.removeItem('currentUser');
       document.getElementById('mainContent').style.display = 'none';
@@ -561,7 +547,6 @@
       }
     }
 
-    // ===== 主題 / UI =====
     function setTheme(mode){
       document.body.classList.remove('theme-day','theme-night','theme-forest');
       document.body.classList.add(`theme-${mode}`);
@@ -569,7 +554,6 @@
     }
     setTheme(localStorage.getItem('themeMode') || 'day');
 
-    // ===== 自選股 / 記帳 / 統計 等等 =====
 
     function addRecord(){
       const role = roleSelect.value;
@@ -673,7 +657,6 @@
       monthTotalEl.textContent = monthTotal.toFixed(2);
     }
 
-    // 分類統計
     function analyzeCategory() {
       const start = startDateInput.value;
       const end = endDateInput.value;
@@ -744,7 +727,6 @@
       });
     }
 
-    // 理財建議
     function saveSalary() {
       const salary = parseFloat(salaryInput.value);
       if (isNaN(salary) || salary <= 0) {
@@ -851,7 +833,6 @@
       });
     }
 
-    // ===== 自選股清單、加入/載入邏輯 =====
     async function loadFavorites() {
       favRef.once('value', async snap => {
         const favs = snap.val() || {};
@@ -951,8 +932,6 @@
       }
     }
 
-    // ===== 新增的：關注節目（每位使用者） =====
-    // 使用 allorigins 作為 CORS 代理抓公開頁面的 HTML
     async function addShow() {
       if (!showRef) return alert("請先登入");
       const url = document.getElementById("showUrlInput").value.trim();
@@ -963,11 +942,10 @@
 
       try {
         const proxy = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
-        const res = await fetch(proxy);
+        const res = await fetch(`https://super-flower-fd8d.az964115.workers.dev/?url=${encodeURIComponent(url)}`);
         if (!res.ok) throw new Error("抓取失敗");
         const html = await res.text();
 
-        // 嘗試抓取 h1 與狀態 / 更新時間（容錯）
         const titleMatch = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
         const statusMatch = html.match(/狀態：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
         const updateMatch = html.match(/更新時間：\s*<span[^>]*>([\s\S]*?)<\/span>/i);
@@ -998,7 +976,6 @@
           list.innerHTML = "<li>尚未追蹤任何節目</li>";
           return;
         }
-        // 依加入時間排序（若有）
         const items = Object.entries(data).sort((a,b)=>{
           const aa = a[1].addedAt||0;
           const bb = b[1].addedAt||0;
@@ -1029,14 +1006,12 @@
       }
     }
 
-    // 綁定按鈕（避免重複宣告 onclick 屬性）
     document.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'addShowBtn') {
         addShow();
       }
     });
 
-    // ===== 頁面啟動初始化 =====
     window.addEventListener('load', () => {
       const currentUser = localStorage.getItem('currentUser');
 
