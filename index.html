@@ -1060,26 +1060,50 @@ async function addShow() {
     const html = await response.text();
 
     const statusMatch = html.match(/狀態：<span>(.*?)<\/span>/i);
-    const status = statusMatch ? statusMatch[1].trim() : "未知";
+    const newStatus = statusMatch ? statusMatch[1].trim() : "未知";
 
     const timeMatch = html.match(/更新時間：<span>(.*?)<\/span>/i);
-    const updateTime = timeMatch ? timeMatch[1].trim() : "";
+    const newUpdateTime = timeMatch ? timeMatch[1].trim() : "";
 
     const user = localStorage.getItem("currentUser");
     if (!user) return;
-
     const showRef = db.ref(`users/${user}/shows/${key}`);
-    await showRef.update({
-      status,
-      updateTime,
-      lastChecked: Date.now(),
-    });
 
-    console.log(`✅ 已更新節目資訊：${url}`);
+    const oldSnap = await showRef.once("value");
+    const oldData = oldSnap.val() || {};
+    let hasNew = false;
+
+    if (oldData.status !== newStatus || oldData.updateTime !== newUpdateTime) {
+      hasNew = true;
+      await showRef.update({
+        status: newStatus,
+        updateTime: newUpdateTime,
+        lastChecked: Date.now(),
+      });
+    }
+
+    const list = document.getElementById("showList");
+    const li = [...list.querySelectorAll("li")].find(el => el.innerHTML.includes(url));
+    if (li) {
+      const titleTag = li.querySelector("a");
+      if (titleTag) {
+        if (hasNew) {
+          titleTag.innerHTML = `🆕 ${titleTag.textContent.replace(/^🆕\s*/, '')}`;
+        } else {
+          titleTag.innerHTML = titleTag.textContent.replace(/^🆕\s*/, '');
+        }
+      }
+
+      const note = li.querySelector(".small-note");
+      if (note) note.textContent = `狀態：${newStatus}｜更新時間：${newUpdateTime}`;
+    }
+
+    console.log(`✅ 節目 ${url} 檢查完成${hasNew ? '（有更新）' : ''}`);
   } catch (err) {
     console.warn("更新節目資訊失敗：", url, err);
   }
 }
+
 
 
 
