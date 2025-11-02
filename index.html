@@ -1013,38 +1013,79 @@ async function addShow() {
 
 
     function loadShows() {
-      if (!showRef) return;
-      const list = document.getElementById("showList");
-      showRef.on("value", (snap) => {
-        const data = snap.val() || {};
-        list.innerHTML = "";
-        const keys = Object.keys(data);
-        if (keys.length === 0) {
-          list.innerHTML = "<li>尚未追蹤任何節目</li>";
-          return;
-        }
-        const items = Object.entries(data).sort((a,b)=>{
-          const aa = a[1].addedAt||0;
-          const bb = b[1].addedAt||0;
-          return bb - aa;
-        });
-        items.forEach(([k, s]) => {
-          const li = document.createElement("li");
-          li.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <div style="max-width:78%;">
-                <a href="${s.url}" target="_blank" style="font-weight:bold; color:#f0a500;">${s.title || s.url}</a><br>
-                <span class="small-note">狀態：${s.status || '-'}｜更新時間：${s.updateTime || '-'}</span>
-              </div>
-              <div>
-                <button onclick="removeShow('${encodeURIComponent(s.url)}')">🗑️ 刪除</button>
-              </div>
-            </div>
-          `;
-          list.appendChild(li);
-        });
-      });
+  if (!showRef) return;
+  const list = document.getElementById("showList");
+
+  showRef.on("value", (snap) => {
+    const data = snap.val() || {};
+    list.innerHTML = "";
+    const keys = Object.keys(data);
+    if (keys.length === 0) {
+      list.innerHTML = "<li>尚未追蹤任何節目</li>";
+      return;
     }
+
+    const items = Object.entries(data).sort((a, b) => {
+      const aa = a[1].addedAt || 0;
+      const bb = b[1].addedAt || 0;
+      return bb - aa;
+    });
+
+    items.forEach(([k, s]) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="max-width:78%;">
+            <a href="${s.url}" target="_blank" style="font-weight:bold; color:#f0a500;">${s.title || s.url}</a><br>
+            <span class="small-note">狀態：${s.status || '-'}｜更新時間：${s.updateTime || '-'}</span>
+          </div>
+          <div>
+            <button onclick="removeShow('${encodeURIComponent(s.url)}')">🗑️ 刪除</button>
+          </div>
+        </div>
+      `;
+      list.appendChild(li);
+
+      updateShowInfo(s.url, k);
+    });
+  });
+}
+
+    async function updateShowInfo(url, key) {
+  const dramaMatch = url.match(/drama\/(\d+)/);
+  if (!dramaMatch) return;
+  const dramaId = dramaMatch[1];
+
+  try {
+    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(`https://www.movieffm.net/drama/${dramaId}/`)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error(`Proxy 請求失敗：${response.status}`);
+
+    const html = await response.text();
+
+    const statusMatch = html.match(/狀態：<span>(.*?)<\/span>/i);
+    const status = statusMatch ? statusMatch[1].trim() : "未知";
+
+    const timeMatch = html.match(/更新時間：<span>(.*?)<\/span>/i);
+    const updateTime = timeMatch ? timeMatch[1].trim() : "";
+
+    const user = localStorage.getItem("currentUser");
+    if (!user) return;
+
+    const showRef = db.ref(`users/${user}/shows/${key}`);
+    await showRef.update({
+      status,
+      updateTime,
+      lastChecked: Date.now(),
+    });
+
+    console.log(`✅ 已更新節目資訊：${url}`);
+  } catch (err) {
+    console.warn("更新節目資訊失敗：", url, err);
+  }
+}
+
+
 
     function removeShow(key) {
       if (!showRef) return;
