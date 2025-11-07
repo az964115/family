@@ -196,11 +196,17 @@
       <h2>🎵 家庭音樂牆</h2>
       <p class="small-note">每人可新增常聽的 Spotify 曲目，並可留言呦~~~</p>
       <div style="display:flex; gap:8px; margin-bottom:8px;">
-        <input id="musicInputTitle" placeholder="曲名或簡短描述" style="flex:2;">
-        <input id="musicInputEmbed" placeholder="YouTube 影片 ID 或 Spotify embed URL (或完整 YouTube 連結)" style="flex:3;">
-        <select id="musicOwner"><option value="mom">媽媽</option><option value="dad">爸爸</option><option value="debby">妹妹</option><option value="jason">Jason</option></select>
-        <button onclick="addMusicTrack()">➕ 新增</button>
-      </div>
+  <input id="musicInputTitle" placeholder="曲名或描述" style="flex:1;">
+  <input id="musicInputEmbed" placeholder="Spotify Embed / YouTube 連結" style="flex:1;">
+  <select id="musicOwner" style="flex:1;">
+    <option value="mom">媽媽</option>
+    <option value="dad">爸爸</option>
+    <option value="debby">妹妹</option>
+    <option value="jason">Jason</option>
+  </select>
+  <button onclick="addMusicTrack()">➕ 新增</button>
+</div>
+
       <div id="musicWallGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px;"></div>
     </section>
 
