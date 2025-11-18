@@ -1503,5 +1503,66 @@ try { loadYTTrending(); } catch(e) {}
 try { loadMusicWall(); } catch(e) {}
 
 </script>
+
+<script>
+async function checkInactivity() {
+  const dayMs = 86400000;
+  const now = Date.now();
+  const users = ['mom','dad','debby','jason'];
+  const names = {mom:'媽媽',dad:'爸爸',debby:'妹妹',jason:'Jason'};
+  const container = document.getElementById('weeklyRank') || document.body;
+  let alertHTML = "";
+  for (const u of users) {
+    const snap = await firebase.database().ref("users/"+u+"/records")
+      .orderByChild("timestamp").limitToLast(1).once('value');
+    const val = snap.val();
+    let lastTs = 0;
+    if (val) lastTs = Object.values(val)[0].timestamp || 0;
+    if (!lastTs) {
+      alertHTML += `<div class='warn'>${names[u]} 尚未記帳！</div>`;
+      continue;
+    }
+    const days = Math.floor((now - lastTs)/dayMs);
+    const dstr = new Date(lastTs - new Date().getTimezoneOffset()*60000).toISOString().slice(0,10);
+    if (days >= 2) {
+      alertHTML += `<div class='warn'>${names[u]} 上次記帳 ${dstr} 已超過 ${days} 天未記帳!! 請注意</div>`;
+      if (Notification.permission === 'granted') {
+        new Notification("記帳提醒",{body:`${names[u]} 已 ${days} 天未記帳`});
+      }
+    }
+  }
+  const target = document.getElementById("inactivityZone");
+  if (target) target.innerHTML = alertHTML;
+}
+
+async function pushLine(msg) {
+  return fetch("https://api.line.me/v2/bot/message/push",{
+    method:"POST",
+    headers:{
+      "Content-Type":"application/json",
+      "Authorization":"Bearer IAVeviy3IfegCOxMwNV7CNLDz2wF+V7iDC8sUVTCtqtsxiYAwbIJGJ12wfhcOpxFJYv/NTBUutv609eMgBbRmcdzZPuKnhcUuq4Dhreq9NJniDPpU3DxltVbN6suMHQG/4HnJrt9IsDYcPT32y88bAdB04t89/1O/w1cDnyilFU="
+    },
+    body:JSON.stringify({
+      to:"U11bb1cee1c5e4630a87fd2df11bad0c1",
+      messages:[{type:"text",text:msg}]
+    })
+  });
+}
+
+window.notifyEpisodeUpdate = async function(showName,newEp){
+  const msg = `📺 你追的 ${showName} 更新到第 ${newEp} 集！`;
+  await pushLine(msg);
+};
+
+window.addEventListener("load", ()=>{
+  if (Notification.permission !== 'granted'){
+    Notification.requestPermission();
+  }
+  checkInactivity();
+});
+</script>
+
+<div id="inactivityZone" style="padding:10px;color:#d00;"></div>
+
 </body>
 </html>
