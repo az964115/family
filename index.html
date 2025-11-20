@@ -1107,9 +1107,10 @@ async function addShow() {
 }
 
 
-    async function updateShowInfo(url, key) {
+async function updateShowInfo(url, key, shouldNotifyLine = false) {
   const dramaMatch = url.match(/drama\/(\d+)/);
   if (!dramaMatch) return;
+
   const dramaId = dramaMatch[1];
 
   try {
@@ -1127,8 +1128,8 @@ async function addShow() {
 
     const user = localStorage.getItem("currentUser");
     if (!user) return;
-    const showRef = db.ref(`users/${user}/shows/${key}`);
 
+    const showRef = db.ref(`users/${user}/shows/${key}`);
     const oldSnap = await showRef.once("value");
     const oldData = oldSnap.val() || {};
     let hasNew = false;
@@ -1138,8 +1139,12 @@ async function addShow() {
       await showRef.update({
         status: newStatus,
         updateTime: newUpdateTime,
-        lastChecked: Date.now(),
+        lastChecked: Date.now()
       });
+
+      if (shouldNotifyLine) {
+        pushLine(`📺 節目更新囉！\n${oldData.title || url}\n新狀態：${newStatus}\n更新時間：${newUpdateTime}`);
+      }
     }
 
     const list = document.getElementById("showList");
@@ -1153,12 +1158,10 @@ async function addShow() {
           titleTag.innerHTML = titleTag.textContent.replace(/^🆕\s*/, '');
         }
       }
-
       const note = li.querySelector(".small-note");
       if (note) note.textContent = `狀態：${newStatus}｜更新時間：${newUpdateTime}`;
     }
 
-    console.log(`✅ 節目 ${url} 檢查完成${hasNew ? '（有更新）' : ''}`);
   } catch (err) {
     console.warn("更新節目資訊失敗：", url, err);
   }
@@ -1471,6 +1474,20 @@ async function loadMusicWall() {
     loadMusicComments(k);
   }
 }
+    
+setInterval(() => {
+  console.log("⏰ 每小時自動檢查節目更新中...");
+  const user = localStorage.getItem("currentUser");
+  if (!user) return;
+
+  const showRef = firebase.database().ref(`users/${user}/shows`);
+  showRef.once("value").then(snap => {
+    const data = snap.val() || {};
+    Object.entries(data).forEach(([key, show]) => {
+      updateShowInfo(show.url, key, true);
+    });
+  });
+}, 3600 * 1000); 
 
 async function postMusicComment(key) {
   const el = document.getElementById('c_' + key);
