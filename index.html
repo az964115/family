@@ -116,13 +116,148 @@
     }
     #portfolioList li, #showList li { border-bottom: 1px solid #eee; padding:6px 8px; }
 
-  </style>
+  
+/* --- Super Effects (lightweight CSS + JS) --- */
+#weather-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  transition: opacity 0.8s ease, filter 0.8s ease;
+}
+/* base overlay so body themes still visible */
+#weather-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+/* Sunny */
+.w-sunny {
+  background: linear-gradient(180deg, #87ceeb 0%, #fdf6e3 60%);
+  filter: brightness(1.03);
+}
+
+/* Cloudy */
+.w-cloudy {
+  background: linear-gradient(180deg, #dfe9f3 0%, #cfd8dc 60%);
+}
+
+/* Night */
+.w-night {
+  background: radial-gradient(circle at 20% 10%, #1b2b4a 0%, #071024 60%);
+}
+
+/* Rain layer (subtle animated raindrops using pseudo-elements) */
+.rain-layer {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(transparent 60%, rgba(255,255,255,0.03) 61%), linear-gradient(transparent 60%, rgba(255,255,255,0.02) 61%);
+  background-size: 2px 60px, 3px 80px;
+  opacity: 0.7;
+  animation: rainMove 0.9s linear infinite;
+}
+@keyframes rainMove {
+  from { transform: translateY(0) skewY(-10deg); }
+  to { transform: translateY(60px) skewY(-10deg); }
+}
+
+/* Lightning flash */
+.lightning-flash {
+  position: absolute; inset: 0; background: rgba(255,255,255,0.0);
+  animation: flash 4.5s linear infinite;
+  pointer-events: none;
+}
+@keyframes flash {
+  0%, 93%, 100% { opacity: 0; }
+  94% { opacity: 0.85; }
+  95% { opacity: 0; }
+  97% { opacity: 0.6; }
+}
+
+/* --- FX animations --- */
+/* clouds */
+.fx-clouds { }
+.fx-clouds .cloud {
+  position: absolute;
+  top: 10%;
+  width: 220px; height: 70px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 50px;
+  filter: blur(6px);
+  opacity: 0.9;
+  animation: cloudFloat 20s linear infinite;
+}
+.fx-clouds .cloud.c2 { top: 30%; left: -200px; width: 360px; height: 90px; animation-duration: 30s; opacity: 0.7; filter: blur(8px); }
+@keyframes cloudFloat { from { transform: translateX(-10%); } to { transform: translateX(120%); } }
+
+/* stars twinkle */
+.fx-stars { }
+.fx-stars::before {
+  content: "";
+  position: absolute; inset: 0;
+  background-image: radial-gradient(#ffffffaa 1px, transparent 2px);
+  background-size: 6px 6px;
+  opacity: 0.85;
+  animation: twinkle 3s linear infinite;
+  filter: blur(0.6px);
+}
+@keyframes twinkle { 0%{opacity:0.6}50%{opacity:1}100%{opacity:0.6} }
+
+/* meteors: small streaks */
+.fx-meteors { overflow: visible; }
+.fx-meteors .meteor {
+  position: absolute; width: 2px; height: 60px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0));
+  transform: rotate(25deg);
+  opacity: 0.0;
+  animation: meteorAnim 2s linear infinite;
+}
+@keyframes meteorAnim {
+  0% { opacity: 0; transform: translate(-10vw,-10vh) rotate(25deg) scale(0.2); }
+  10% { opacity: 1; }
+  100% { opacity: 0; transform: translate(110vw,70vh) rotate(25deg) scale(0.6); }
+}
+
+/* particles (gentle floating dots) */
+.fx-particles { }
+.fx-particles .p {
+  position: absolute; width:8px;height:8px;border-radius:50%;
+  background: radial-gradient(circle,#fff 0%, rgba(255,255,255,0.6) 60%);
+  opacity: 0.9; filter: blur(1px);
+  animation: floaty 8s linear infinite;
+}
+@keyframes floaty { 0%{transform:translateY(0)}50%{transform:translateY(-30px)}100%{transform:translateY(0)} }
+
+/* fireworks (subtle bursts) */
+.fx-fireworks .burst {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%;
+  box-shadow: 0 0 10px 3px rgba(255,200,80,0.9);
+  opacity: 0; animation: firework 1.2s linear infinite;
+}
+@keyframes firework {
+  0% { transform: scale(0.2); opacity: 1; }
+  70% { transform: scale(1.6); opacity: 0.9; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ensure content above effects stays readable */
+.container, .header, .top-right, .announcement, #mainContent, #loginSection {
+  position: relative;
+  z-index: 10;
+}
+
+</style>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
+  <div id="weather-bg"></div>
+
   <div id="loginSection" class="container" style="max-width:400px; margin:auto;">
   <h2>👤 使用者登入</h2>
   <label>使用者名稱</label>
@@ -140,8 +275,8 @@
 <div id="mainContent" style="display:none;">
   <div class="top-right">
     <button onclick="setTheme('day')">🌞 白天</button>
-    <button onclick="setTheme('night')">🌙 夜間</button>
-    <button onclick="setTheme('forest')">🌿 森林</button>
+    <button id="weatherBtn" onclick="randomWeather()">⛅ 天氣</button>
+    <button id="fxBtn" onclick="randomFX()">✨ 動畫</button>
     <button onclick="changePassword()">🔐 修改密碼</button>
     <button onclick="logout()">🚪 登出</button>
   </div>
@@ -1618,6 +1753,158 @@ window.addEventListener("load", ()=>{
 </script>
 
 <div id="inactivityZone" style="padding:10px;color:#d00;"></div>
+
+
+<script>
+/* --- Weather & FX control (lightweight) --- */
+const weatherScenes = ['sunny','cloudy','night','rain','storm'];
+const fxScenes = ['clouds','stars','meteors','particles','fireworks'];
+
+function clearWeatherLayers() {
+  const bg = document.getElementById('weather-bg');
+  if (!bg) return;
+  bg.innerHTML = '';
+  bg.className = '';
+  // remove overlay if exists
+  const ov = document.getElementById('weather-overlay');
+  if (ov) ov.remove();
+}
+
+function applyWeather(scene) {
+  clearWeatherLayers();
+  const bg = document.getElementById('weather-bg');
+  if (!bg) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'weather-overlay';
+  document.body.appendChild(overlay);
+
+  switch(scene) {
+    case 'sunny':
+      bg.classList.add('w-sunny');
+      overlay.style.opacity = '0';
+      break;
+    case 'cloudy':
+      bg.classList.add('w-cloudy');
+      overlay.style.opacity = '0.0';
+      // add subtle cloud pseudo via fx-clouds but light
+      const c = document.createElement('div');
+      c.className = 'fx-clouds';
+      const cl1 = document.createElement('div'); cl1.className='cloud';
+      const cl2 = document.createElement('div'); cl2.className='cloud c2';
+      c.appendChild(cl1); c.appendChild(cl2);
+      bg.appendChild(c);
+      break;
+    case 'night':
+      bg.classList.add('w-night');
+      overlay.style.opacity = '0';
+      break;
+    case 'rain':
+      bg.classList.add('w-cloudy');
+      const rain = document.createElement('div'); rain.className='rain-layer';
+      bg.appendChild(rain);
+      overlay.style.opacity = '0.15';
+      break;
+    case 'storm':
+      bg.classList.add('w-cloudy');
+      const rain2 = document.createElement('div'); rain2.className='rain-layer';
+      bg.appendChild(rain2);
+      const flash = document.createElement('div'); flash.className='lightning-flash';
+      bg.appendChild(flash);
+      overlay.style.opacity = '0.22';
+      break;
+    default:
+      bg.classList.add('w-sunny');
+      overlay.style.opacity = '0';
+      break;
+  }
+}
+
+/* pick random weather (button) */
+function randomWeather() {
+  const pick = weatherScenes[Math.floor(Math.random()*weatherScenes.length)];
+  applyWeather(pick);
+  // set theme classes for readability if needed
+  if (pick === 'night') setTheme('night'); else if (pick==='cloudy' || pick==='rain' || pick==='storm') setTheme('day'); else setTheme('day');
+}
+
+/* FX handling */
+function clearFX() {
+  // remove fx containers inside weather-bg
+  const bg = document.getElementById('weather-bg');
+  if (!bg) return;
+  const nodes = bg.querySelectorAll('.fx-clouds, .fx-stars, .fx-meteors, .fx-particles, .fx-fireworks');
+  nodes.forEach(n => n.remove());
+}
+
+function applyFX(scene) {
+  clearFX();
+  const bg = document.getElementById('weather-bg');
+  if (!bg) return;
+  switch(scene) {
+    case 'clouds':
+      const cwrap = document.createElement('div'); cwrap.className='fx-clouds';
+      const c1 = document.createElement('div'); c1.className='cloud';
+      const c2 = document.createElement('div'); c2.className='cloud c2';
+      cwrap.appendChild(c1); cwrap.appendChild(c2);
+      bg.appendChild(cwrap);
+      break;
+    case 'stars':
+      const s = document.createElement('div'); s.className='fx-stars';
+      bg.appendChild(s);
+      break;
+    case 'meteors':
+      const mwrap = document.createElement('div'); mwrap.className='fx-meteors';
+      for (let i=0;i<3;i++){
+        const met = document.createElement('div'); met.className='meteor';
+        met.style.left = (10 + i*25) + 'vw';
+        met.style.top = (-10 + i*10) + 'vh';
+        met.style.animationDelay = (i*0.6) + 's';
+        mwrap.appendChild(met);
+      }
+      bg.appendChild(mwrap);
+      break;
+    case 'particles':
+      const pw = document.createElement('div'); pw.className='fx-particles';
+      for (let i=0;i<10;i++){
+        const p = document.createElement('div'); p.className='p';
+        p.style.left = (Math.random()*90)+'vw';
+        p.style.top = (Math.random()*80)+'vh';
+        p.style.animationDuration = (6 + Math.random()*6)+'s';
+        pw.appendChild(p);
+      }
+      bg.appendChild(pw);
+      break;
+    case 'fireworks':
+      const fw = document.createElement('div'); fw.className='fx-fireworks';
+      for (let i=0;i<6;i++){
+        const b = document.createElement('div'); b.className='burst';
+        b.style.left = (20 + i*10) + 'vw';
+        b.style.top = (20 + (i%2)*10) + 'vh';
+        b.style.animationDelay = (i*0.2) + 's';
+        fw.appendChild(b);
+      }
+      bg.appendChild(fw);
+      break;
+    default:
+      break;
+  }
+}
+
+/* pick random FX */
+function randomFX() {
+  const pick = fxScenes[Math.floor(Math.random()*fxScenes.length)];
+  applyFX(pick);
+}
+
+/* ensure buttons show current selection briefly */
+document.addEventListener('DOMContentLoaded', ()=> {
+  // preserve previous theme
+  const saved = localStorage.getItem('themeMode') || 'day';
+  setTheme(saved);
+  // initialize with sunny
+  applyWeather('sunny');
+});
+</script>
 
 </body>
 </html>
