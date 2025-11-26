@@ -1534,22 +1534,22 @@ try { loadMusicWall(); } catch(e) {}
 async function checkInactivity() {
   const dayMs = 86400000;
   const now = Date.now();
-  const users = ['mom', 'dad', 'debby', 'jason'];
-  const names = { mom: '媽媽', dad: '爸爸', debby: '妹妹', jason: 'Jason' };
+  const users = ['mom','dad','debby','jason'];
+  const names = {mom:'媽媽',dad:'爸爸',debby:'妹妹',jason:'Jason'};
 
   let alertHTML = "";
 
   for (const u of users) {
     const userRef = firebase.database().ref("users/" + u);
 
-    // 取得延後提醒的時間
+    // 取得延後提醒時間
     const delaySnap = await userRef.child("inactivityDelayUntil").once("value");
     const delayUntil = delaySnap.exists() ? delaySnap.val() : 0;
 
-    // ➜ 若有延後且還沒到時間 → 跳過提醒
+    // ➜ 若有延後，且還沒到時間 → 不顯示、不推播
     if (now < delayUntil) continue;
 
-    // 取得使用者最後記帳時間
+    // 取得最後記帳時間
     const snap = await userRef.child("records")
       .orderByChild("timestamp").limitToLast(1).once('value');
     const val = snap.val();
@@ -1558,7 +1558,8 @@ async function checkInactivity() {
     if (val) lastTs = Object.values(val)[0].timestamp || 0;
 
     if (!lastTs) {
-      alertHTML += `<div class='warn'>
+      alertHTML += `
+      <div class='warn'>
         ${names[u]} 尚未記帳！
         <button onclick="delayInactivity('${u}')">我這幾天都沒花錢！</button>
       </div>`;
@@ -1566,13 +1567,22 @@ async function checkInactivity() {
     }
 
     const days = Math.floor((now - lastTs) / dayMs);
-    const dstr = new Date(lastTs - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    const dstr = new Date(lastTs - new Date().getTimezoneOffset()*60000)
+      .toISOString().slice(0,10);
 
     if (days >= 2) {
-      alertHTML += `<div class='warn'>
+      alertHTML += `
+      <div class='warn'>
         ${names[u]} 上次記帳 ${dstr} 已超過 ${days} 天未記帳!! 請注意
         <button onclick="delayInactivity('${u}')">我這幾天都沒花錢！</button>
       </div>`;
+
+      // ✔ 推播通知（你的舊版本功能）
+      if (Notification.permission === 'granted') {
+        new Notification("記帳提醒", {
+          body: `${names[u]} 已 ${days} 天未記帳`
+        });
+      }
     }
   }
 
