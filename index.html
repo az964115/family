@@ -478,7 +478,7 @@
         <button onclick="addPortfolio()">新增</button>
       </div>
 
-      <h3 style="margin-top:15px;">📋 我的持股列表 資產快照請至:https://az964115.github.io/family-stock/ </h3>
+      <h3 style="margin-top:15px;">📋 我的持股列表</h3>
       <div id="totalProfitSection">
         📈 最新收盤價(上一個1330)總損益：<span id="todayTotalProfit">0</span> 元
       </div>
@@ -1908,3 +1908,52 @@ document.addEventListener('DOMContentLoaded', ()=> {
 
 </body>
 </html>
+
+<!-- ===== 投資快照整合區塊（完整保留）===== -->
+<section class="container">
+  <h2>📉 2026 資產快照</h2>
+
+  <div class="stat-box">
+    <p>💰 當前資產總現值：
+      <span id="currentNetWorth" style="font-size:1.5em; color:#f0a500; font-weight:bold;">0</span> 元
+    </p>
+
+    <div class="flex-row" style="margin-top:10px;">
+      <div class="flex-grow">
+        🚀 今年賺最多：<br>
+        <small id="maxGainDay">讀取中...</small>
+      </div>
+      <div class="flex-grow">
+        📉 今年最慘日：<br>
+        <small id="maxLossDay">讀取中...</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="profitTrendChart"></canvas>
+  </div>
+
+  <h3 style="margin-top:20px;">📋 持股清單</h3>
+  <ul id="portfolioList">
+    <li>載入中...</li>
+  </ul>
+
+  <details style="margin-top:10px;">
+    <summary>➕ 新增持股 / 今日盈虧</summary>
+
+    <div class="flex-row" style="margin-top:10px;">
+      <input type="text" id="pfSymbol" placeholder="代號" style="width:80px;">
+      <input type="number" id="pfShares" placeholder="股數">
+      <input type="number" id="pfCost" placeholder="成本">
+      <button onclick="addPortfolio()">新增持股</button>
+    </div>
+
+    <hr>
+
+    <div class="flex-row">
+      <input type="number" id="dailyProfitInput" placeholder="今日總盈虧金額 (如:+5000)">
+      <button onclick="saveDailyProfit()">紀錄今日盈虧</button>
+    </div>
+  </details>
+</section>
