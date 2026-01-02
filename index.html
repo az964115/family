@@ -478,7 +478,7 @@
         <button onclick="addPortfolio()">新增</button>
       </div>
 
-      <h3 style="margin-top:15px;">📋 我的持股列表</h3>
+      <h3 style="margin-top:15px;">📋 我的持股列表 資產快照請至:https://az964115.github.io/family-stock/ </h3>
       <div id="totalProfitSection">
         📈 最新收盤價(上一個1330)總損益：<span id="todayTotalProfit">0</span> 元
       </div>
@@ -1904,9 +1904,69 @@ document.addEventListener('DOMContentLoaded', ()=> {
   // initialize with sunny
   applyWeather('sunny');
 });
-</script>
 
-</body>
+// ===== 自動同步 family 持股總損益 → 資產快照（最終版） =====
+function syncFamilyProfitToSnapshot() {
+  const user = localStorage.getItem("currentUser");
+  if (!user) return;
+
+  // 嘗試從 family 頁面已顯示的「總損益」抓數字
+  const profitEl = document.querySelector("[data-total-profit], #totalProfit, .total-profit");
+  if (!profitEl) return;
+
+  const raw = profitEl.textContent.replace(/[^0-9\-\.]/g, "");
+  const profit = parseFloat(raw);
+  if (isNaN(profit)) return;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  firebase.database().ref(`family/investSnapshot/${user}/${today}`).set({
+    profit: profit,
+    time: Date.now()
+  });
+
+  firebase.database().ref(`family/currentNetWorth/${user}`).set({
+    value: profit,
+    time: Date.now()
+  });
+}
+
+// 每 30 秒嘗試同步一次（不影響效能）
+setInterval(syncFamilyProfitToSnapshot, 30000);
+
+// 資產快照讀取 family 資料
+function calculateNetWorth() {
+  const user = localStorage.getItem("currentUser");
+  firebase.database().ref(`family/currentNetWorth/${user}`).on("value", snap => {
+    if (!snap.exists()) return;
+    document.getElementById("currentNetWorth").textContent =
+      snap.val().value.toLocaleString();
+  });
+}
+
+function loadAnnualReview() {
+  const user = localStorage.getItem("currentUser");
+  firebase.database().ref(`family/investSnapshot/${user}`).on("value", snap => {
+    const data = snap.val();
+    if (!data) return;
+
+    const entries = Object.entries(data)
+      .map(([d, v]) => [d, v.profit])
+      .sort((a, b) => new Date(a[0]) - new Date(b[0]));
+
+    const maxGain = entries.reduce((a, b) => b[1] > a[1] ? b : a);
+    const maxLoss = entries.reduce((a, b) => b[1] < a[1] ? b : a);
+
+    document.getElementById("maxGainDay").textContent =
+      `${maxGain[0]} (+${maxGain[1].toLocaleString()})`;
+    document.getElementById("maxLossDay").textContent =
+      `${maxLoss[0]} (${maxLoss[1].toLocaleString()})`;
+
+    updateChart(entries);
+  });
+}
+
+\1
 </html>
 
 <!-- ===== 投資快照整合區塊（完整保留）===== -->
