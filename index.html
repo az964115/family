@@ -478,15 +478,29 @@
         <button onclick="addPortfolio()">新增</button>
       </div>
 
-      <h3 style="margin-top:15px;">📋 我的持股列表 資產快照: https://az964115.github.io/family-stock/ </h3>
-      <div id="totalProfitSection">
-        📈 最新收盤價(上一個1330)總損益：<span id="todayTotalProfit">0</span> 元
-      </div>
-      <ul id="portfolioList"><li>暫無資料</li></ul>
+      <h3 style="margin-top:15px;">📋 我的持股列表</h3>
+  
+  <!-- 如果想讓非 Jason 使用者看不到快照連結，可以給它一個 id -->
+  <p id="snapshotLink" style="font-size: 0.9em;">
+    🔗 資產快照: <a href="https://az964115.github.io/family-stock/" target="_blank">點此查看詳情</a>
+  </p>
+
+  <div id="totalProfitSection" style="background: #eee; padding: 10px; border-radius: 5px;">
+    📈 最新收盤價(上一個1330)總損益：
+    <span id="todayTotalProfit" style="font-size: 1.2em; font-weight: bold;">0</span> 元
+  </div>
+
+  <ul id="portfolioList" style="line-height: 2.5;">
+    <li>正在載入持股資料...</li>
+  </ul>
     </section>
 
 </div>
   <script>
+    if (localStorage.getItem('currentUser')?.toLowerCase() !== 'jason') {
+    const link = document.getElementById('snapshotLink');
+    if (link) link.style.display = 'none'; // 非 Jason 就把連結藏起來
+  }
     const firebaseConfig = {
       apiKey: "AIzaSyCGSq-8joudLdCEB954krl3diNqMQXmsxg",
       authDomain: "piggynet-93c33.firebaseapp.com",
@@ -635,35 +649,52 @@ document.getElementById('endDate').value = today;
 
     window.addEventListener("load", loadBoard);
 
-    function loadPortfolio() {
-      if (!pfRef) return;
-      pfRef.on("value", async snap => {
-        const data = snap.val() || {};
-        const list = document.getElementById("portfolioList");
-        list.innerHTML = "";
+function loadPortfolio() {
+  const currentUser = localStorage.getItem('currentUser') || 'guest';
+  const isJason = currentUser.toLowerCase() === 'jason';
+  
+  if (!pfRef) return;
 
-        for (const [code, info] of Object.entries(data)) {
-          try {
-            const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
-            const stock = await res.json();
-            let price = 0;
-            if (stock.stat === "OK" && stock.data.length > 0) {
-              const last = stock.data[stock.data.length - 1];
-              price = parseFloat(last[6].replace(/,/g, ""));
-            }
-            const gain = ((price - info.cost) * info.shares).toFixed(2);
-            const color = gain >= 0 ? "red" : "green";
-            const li = document.createElement("li");
-            li.innerHTML = `
-              <b>${code}</b>｜${info.shares}股｜成本 ${info.cost}｜現價 ${price.toFixed(2)}｜
-              <span style="color:${color}; font-weight:bold;">損益 ${gain}</span>
-              <button onclick="removePortfolio('${code}')" style="margin-left:8px;">刪除</button>
-            `;
-            list.appendChild(li);
-          } catch (e) {
-            console.error(e);
-          }
+  pfRef.on("value", async snap => {
+    const data = snap.val() || {};
+    const list = document.getElementById("portfolioList");
+    list.innerHTML = "";
+
+    // 這裡開始迴圈每一支股票
+    for (const [code, info] of Object.entries(data)) {
+      try {
+        const res = await fetch(`https://www.twse.com.tw/exchangeReport/STOCK_DAY?response=json&stockNo=${code}`);
+        const stock = await res.json();
+        let price = 0;
+        
+        if (stock.stat === "OK" && stock.data && stock.data.length > 0) {
+          const last = stock.data[stock.data.length - 1];
+          price = parseFloat(last[6].replace(/,/g, ""));
         }
+
+        // --- 關鍵修改：變數判斷要放在迴圈裡面 ---
+        const displayCode = isJason ? code : "投資項目(隱藏)";
+        const displayShares = isJason ? `${info.shares} 股` : "**** 股";
+        const displayCost = isJason ? `成本 ${info.cost}` : "成本 --";
+        const displayPrice = isJason ? `現價 ${price.toFixed(2)}` : "現價 --";
+        const deleteBtn = isJason ? `<button onclick="removePortfolio('${code}')" style="margin-left:8px;">刪除</button>` : "";
+        
+        const gain = ((price - info.cost) * info.shares).toFixed(2);
+        const color = gain >= 0 ? "red" : "green";
+        
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <b>${displayCode}</b>｜${displayShares}｜${displayCost}｜${displayPrice}｜
+          <span style="color:${color}; font-weight:bold;">損益 ${gain}</span>
+          ${deleteBtn}
+        `;
+        list.appendChild(li);
+        // ------------------------------------
+
+      } catch (e) {
+        console.error("抓取股票資料失敗:", e);
+      }
+    }
         if (list.innerHTML === "") list.innerHTML = "<li>暫無資料</li>";
       });
     }
